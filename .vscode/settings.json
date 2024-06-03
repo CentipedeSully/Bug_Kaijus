@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Bug Kaiju.sln"
+    "dotnet.defaultSolution": "Bug Kaijus.sln"
 }
