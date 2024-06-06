@@ -578,7 +578,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 761435093}
         m_TargetAssemblyTypeName: InputReader, Assembly-CSharp
-        m_MethodName: ReadSelectionInput
+        m_MethodName: DetectSelectionInput
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -594,7 +594,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 761435093}
         m_TargetAssemblyTypeName: InputReader, Assembly-CSharp
-        m_MethodName: ReadActionInput
+        m_MethodName: DetectActionInput
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -614,7 +614,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 761435093}
         m_TargetAssemblyTypeName: InputReader, Assembly-CSharp
-        m_MethodName: ReadAuxillaryInput
+        m_MethodName: DetectAuxillaryInput
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -630,7 +630,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 761435093}
         m_TargetAssemblyTypeName: InputReader, Assembly-CSharp
-        m_MethodName: ReadBackInput
+        m_MethodName: DetectBackInput
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
