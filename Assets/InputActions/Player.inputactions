@@ -63,7 +63,7 @@
                     "name": "Rotational Manipulation",
                     "type": "PassThrough",
                     "id": "488badfe-0dba-423b-883c-81f6c7526b4c",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -236,9 +236,9 @@
                     "isPartOfComposite": true
                 },
                 {
-                    "name": "Q/E",
-                    "id": "d89fa6d0-70cc-4d64-ab11-59eebb67e28e",
-                    "path": "1DAxis",
+                    "name": "2D Vector",
+                    "id": "dad3bd19-9976-4f7a-84e6-47b8414ffa2f",
+                    "path": "2DVector",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -247,56 +247,45 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "negative",
-                    "id": "a06749fe-643c-44b4-bda9-8b0b5e99e9c4",
+                    "name": "up",
+                    "id": "aa98fdef-0484-4664-b19c-ec83922d4913",
+                    "path": "<Mouse>/scroll/up",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "PC",
+                    "action": "Rotational Manipulation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "34004aba-22c5-461b-a67f-f1dc63aacb60",
+                    "path": "<Mouse>/scroll/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Rotational Manipulation",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "38831599-91e8-4db0-a285-0d2b2b57e47b",
                     "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
-                    "groups": "PC",
+                    "groups": "",
                     "action": "Rotational Manipulation",
                     "isComposite": false,
                     "isPartOfComposite": true
                 },
                 {
-                    "name": "positive",
-                    "id": "f600decb-83aa-41f4-a390-bdca490e7a5b",
+                    "name": "right",
+                    "id": "aee4fed5-ebfb-4f20-a187-22326a5fc059",
                     "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
-                    "groups": "PC",
-                    "action": "Rotational Manipulation",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "Del/PgDwn",
-                    "id": "e2feb9df-ca74-4082-8fb6-b3194a05daef",
-                    "path": "1DAxis",
-                    "interactions": "",
-                    "processors": "",
                     "groups": "",
-                    "action": "Rotational Manipulation",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "negative",
-                    "id": "d1734b4c-b4d9-48c7-b476-8cd938a9cb37",
-                    "path": "<Keyboard>/delete",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "PC",
-                    "action": "Rotational Manipulation",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "positive",
-                    "id": "41ba7fc1-94d7-4c2c-8aad-569749b836e7",
-                    "path": "<Keyboard>/pageDown",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "PC",
                     "action": "Rotational Manipulation",
                     "isComposite": false,
                     "isPartOfComposite": true

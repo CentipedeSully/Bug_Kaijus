@@ -170,7 +170,8 @@ public class InputReader : MonoBehaviour, IDebugLoggable
     {
         if (context.phase == InputActionPhase.Performed || context.action.IsPressed())
         {
-            float cycleInput = context.ReadValue<float>();
+            //Cinemachine wants this control to be a Vector2. We only need the x value
+            float cycleInput = context.ReadValue<Vector2>().x;
             OnCycleInput.Invoke((int)cycleInput);
 
             if (_showDebug)
