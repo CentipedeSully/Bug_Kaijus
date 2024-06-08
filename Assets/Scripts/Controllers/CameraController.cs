@@ -45,7 +45,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     //Monobehaviours
     private void Start()
     {
-        SetupNewLiteralFocus();
+        InitializeIntoFreeLookMode();
     }
 
     private void Update()
@@ -55,6 +55,13 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     }
 
     //Internal Utils
+    private void InitializeIntoFreeLookMode()
+    {
+        //Hard reset into FreeLook to to start from a clean slate
+        _isFreeLookActive = false;
+        EnterFreeLook();
+    }
+
     private void SetupNewLiteralFocus()
     {
         if (_literalFocusObject == null)
@@ -80,18 +87,19 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     {
         if (newSubject != null)
         {
+            //Create a new literal focus if we don't have one for some reason (accidental deletion?)
             if (_literalFocusObject == null)
                 SetupNewLiteralFocus();
 
-        
+            //Exit FreeLook Mode
             if (_isFreeLookActive)
-            {
-                //Exit FreeLook Mode
                 _isFreeLookActive = false;
-            }
 
-            //Set the newSubject as the literalFocusObject's parent
-            _literalFocusObject.transform.SetParent(newSubject.transform, false);
+            //update the currentFocus Util
+            _currentCameraFocus = newSubject;
+
+            //Set the new current focus as the literalFocusObject's parent
+            _literalFocusObject.transform.SetParent(_currentCameraFocus.transform, false);
             _literalFocusObject.transform.localPosition = Vector3.zero;
 
         }
