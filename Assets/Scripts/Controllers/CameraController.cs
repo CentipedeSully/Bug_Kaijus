@@ -6,16 +6,33 @@ using Cinemachine;
 public class CameraController : MonoBehaviour, IDebugLoggable
 {
     //Declarations
-    [SerializeField] private bool _isFreeLookActive = false;
+    [Header("Camera Settings")]
+    [SerializeField] private int _panSpeed;
+    //create utils to bound panning-- to Stop player from moving camera beyond gameSpace
+
+    [SerializeField] private int _zoomSpeed;
+    [SerializeField] private float _maxZoomDistance;
+    [SerializeField] private float _minZoomDistance;
+
+    [SerializeField] private int _orbitSpeed;
+
+    [Header("Camera Utilities, States & References")]
+    [SerializeField] private bool _isFreeLookActive = true;
+
+    [Tooltip(
+        "This is where the camera's focus will land when the camera enters freeLook mode. " +
+        "This value changes whenever the camera transitions from Focused to FreeLook")]
     [SerializeField] private Vector3 _defaultFreeLookPosition;
+
     [Tooltip("This is what the literalFocusObject is currently following. Empty means we're in freeLook mode")]
     [SerializeField] private GameObject _currentCameraFocus;
-    [Tooltip("The vcam is bound to this object at all times. This literal object will get moved and parented to other objects to emulate changes in focus")]
-    [SerializeField] private GameObject _literalFocusObject;
-    [SerializeField] private CinemachineVirtualCamera _currentCamera;
-    [SerializeField] private int _panSpeed;
-    [SerializeField] private int _zoomSpeed;
-    [SerializeField] private int _orbitSpeed;
+
+    [Tooltip("This is our true Follow & LookAt object. It parents to other gameObjects to emulate direct focusing")]
+    [SerializeField] private GameObject _literalCamFocusPrefab;
+    private GameObject _literalFocusObject;
+
+    [SerializeField] private CinemachineVirtualCamera _mapCamera;
+
 
     [Header("Debug Utils")]
     [SerializeField] private bool _isDebugActive;
@@ -28,7 +45,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     //Monobehaviours
     private void Start()
     {
-        EnterFreeLook();
+        SetupNewLiteralFocus();
     }
 
     private void Update()
@@ -40,43 +57,33 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     //Internal Utils
     private void SetupNewLiteralFocus()
     {
-        //Create a new object as out literal focus
-        _literalFocusObject = Instantiate(new GameObject("Literal Camera Object (Regenerated)"));
+        if (_literalFocusObject == null)
+        {
+            //Create a new object as out literal focus
+            _literalFocusObject = Instantiate(_literalCamFocusPrefab);
 
-        //Set the object to the default position.
-        _literalFocusObject.transform.position = _defaultFreeLookPosition;
+            //Set the object to the default position.
+            _literalFocusObject.transform.position = _defaultFreeLookPosition;
 
-        //It belongs to the camera controller
-        _literalFocusObject.transform.SetParent(this.transform, false);
+            //It belongs to the camera controller
+            _literalFocusObject.transform.SetParent(this.transform, false);
 
-        //Update the vCam and this object as the new camera's focus
-        _currentCamera.LookAt = _literalFocusObject.transform;
-        _currentCamera.Follow = _literalFocusObject.transform;
-
+            //Update the vCam and this object as the new camera's focus
+            _mapCamera.LookAt = _literalFocusObject.transform;
+            _mapCamera.Follow = _literalFocusObject.transform;
+        }
     }
 
 
     //External Utils
-    public void SetCamera(CinemachineVirtualCamera newCamera)
-    {
-        if (newCamera != null && newCamera != _currentCamera)
-        {
-            _currentCamera = newCamera;
-        }
-    }
-
-    public CinemachineVirtualCamera GetCamera()
-    {
-        return _currentCamera;
-    }
-
     public void SetCameraFocus(GameObject newSubject)
     {
-        if (_literalFocusObject == null)
-            SetupNewLiteralFocus();
-
         if (newSubject != null)
         {
+            if (_literalFocusObject == null)
+                SetupNewLiteralFocus();
+
+        
             if (_isFreeLookActive)
             {
                 //Exit FreeLook Mode
@@ -92,18 +99,18 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
     public void SetOrbitSpeed(int newValue)
     {
-        if (_currentCamera != null)
+        if (_mapCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _orbitSpeed = newValue;
-            _currentCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_XAxis.m_MaxSpeed = _orbitSpeed;
+            _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_XAxis.m_MaxSpeed = _orbitSpeed;
         }
         
     }
 
     public void SetZoomSpeed(int newValue)
     {
-        if (_currentCamera != null)
+        if (_mapCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _zoomSpeed = newValue;
@@ -112,7 +119,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
     public void SetPanSpeed(int newValue)
     {
-        if (_currentCamera != null)
+        if (_mapCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _panSpeed = newValue;
@@ -121,15 +128,27 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
     public void ZoomOnInput(int zoomDirection)
     {
-        Vector3 currentOrbitalDistance = _currentCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset;
+        if (_mapCamera != null)
+        {
+            Vector3 currentOrbitalDistance = _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset;
 
-        //invert the zoom direction for better feel
-        float offset = -1 * zoomDirection * _zoomSpeed * Time.deltaTime;
-        Vector3 zoomOffset = new(offset, offset, offset);
+            //invert the zoom direction for better feel
+            float offset = -1 * zoomDirection * _zoomSpeed * Time.deltaTime;
+            Vector3 zoomOffset = new(offset, offset, offset);
 
-        Vector3 newOrbitalDistance = currentOrbitalDistance + zoomOffset;
+            Vector3 newOrbitalDistance = currentOrbitalDistance + zoomOffset;
 
-        _currentCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset = newOrbitalDistance;
+            //Clamp the zooming
+            float xDistanceClamped = Mathf.Clamp(newOrbitalDistance.x, _minZoomDistance, _maxZoomDistance);
+            float yDistanceClamped = Mathf.Clamp(newOrbitalDistance.y, _minZoomDistance, _maxZoomDistance);
+            float zDistanceClamped = Mathf.Clamp(newOrbitalDistance.z, _minZoomDistance, _maxZoomDistance);
+
+            Vector3 newClampedOrbitalDistance = new (xDistanceClamped, yDistanceClamped, zDistanceClamped);
+
+
+            //Apply the new Distance to the camera
+            _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset = newClampedOrbitalDistance;
+        }
     }
 
 
@@ -147,18 +166,27 @@ public class CameraController : MonoBehaviour, IDebugLoggable
         {
             _isFreeLookActive = true;
 
+            //Update the default freeLook position to the last-focused object's position (if it exists)
+            if (_currentCameraFocus != null)
+                _defaultFreeLookPosition = _currentCameraFocus.transform.position;
+
+            //Clear the currentCameraFocus utility
+            _currentCameraFocus = null;
+
             //Did our literalFocusObject accidentally get destroyed?
             if (_literalFocusObject == null)
                 SetupNewLiteralFocus();
 
+            //Only take it back (reparent) if it didn't get destroyed
             else
             {
                 //Return the camera focus object to this camera controller
                 _literalFocusObject.transform.SetParent(transform, true);
             }
+            
+
         }
     }
-
 
 
     //Debugging

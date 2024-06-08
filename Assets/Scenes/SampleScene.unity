@@ -1096,14 +1096,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b41d015119e03a34fa84d10eab9c8fc1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isFreeLookActive: 0
-  _defaultFreeLookPosition: {x: 0, y: 0, z: 0}
-  _currentCameraFocus: {fileID: 0}
-  _literalFocusObject: {fileID: 0}
-  _currentCamera: {fileID: 690887782}
   _panSpeed: 0
   _zoomSpeed: 275
+  _maxZoomDistance: 30
+  _minZoomDistance: 5
   _orbitSpeed: 100
+  _isFreeLookActive: 1
+  _defaultFreeLookPosition: {x: 0, y: 0, z: 0}
+  _currentCameraFocus: {fileID: 0}
+  _literalCamFocusPrefab: {fileID: 7201616478167502485, guid: 0ff920f149bd51c4d986d68e850cad93,
+    type: 3}
+  _mapCamera: {fileID: 690887782}
   _isDebugActive: 0
   _DEBUG_setTargetAsFocus: 0
   _DEBUG_focusTarget: {fileID: 360322291}
