@@ -34,7 +34,8 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     [SerializeField] private GameObject _literalCamFocusPrefab;
     private GameObject _literalFocusObject;
 
-    [SerializeField] private CinemachineVirtualCamera _mapCamera;
+    [SerializeField] private CinemachineVirtualCamera _mapVirtualCamera;
+    [SerializeField] private Camera _mapUnityCamera;
 
 
     [Header("Debug Utils")]
@@ -86,8 +87,8 @@ public class CameraController : MonoBehaviour, IDebugLoggable
             _literalFocusObject.transform.SetParent(this.transform, false);
 
             //Update the vCam and this object as the new camera's focus
-            _mapCamera.LookAt = _literalFocusObject.transform;
-            _mapCamera.Follow = _literalFocusObject.transform;
+            _mapVirtualCamera.LookAt = _literalFocusObject.transform;
+            _mapVirtualCamera.Follow = _literalFocusObject.transform;
         }
     }
 
@@ -105,7 +106,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
             Vector3 currentFocusPosition = _literalFocusObject.transform.position;
 
             //Calculate the displacement vector RELATIONAL TO THE PLAYER'S VIEWPORT
-            Vector3 relationalDisplacement = _mapCamera.transform.TransformDirection(displacement);
+            Vector3 relationalDisplacement = _mapVirtualCamera.transform.TransformDirection(displacement);
 
             //Zero the new y displacement
             relationalDisplacement = new(relationalDisplacement.x, 0, relationalDisplacement.z);
@@ -119,7 +120,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     {
         if (_zoomInput != 0)
         {
-            Vector3 currentOrbitalDistance = _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset;
+            Vector3 currentOrbitalDistance = _mapVirtualCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset;
 
             //invert the zoom direction for better feel
             float offset = -1 * _zoomInput * _zoomSpeed * Time.deltaTime;
@@ -136,7 +137,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
 
             //Apply the new Distance to the camera
-            _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset = newClampedOrbitalDistance;
+            _mapVirtualCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_FollowOffset = newClampedOrbitalDistance;
         }
     }
 
@@ -187,18 +188,18 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
     public void SetOrbitSpeed(int newValue)
     {
-        if (_mapCamera != null)
+        if (_mapVirtualCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _orbitSpeed = newValue;
-            _mapCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_XAxis.m_MaxSpeed = _orbitSpeed;
+            _mapVirtualCamera.GetCinemachineComponent<CinemachineOrbitalTransposer>().m_XAxis.m_MaxSpeed = _orbitSpeed;
         }
         
     }
 
     public void SetZoomSpeed(int newValue)
     {
-        if (_mapCamera != null)
+        if (_mapVirtualCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _zoomSpeed = newValue;
@@ -207,7 +208,7 @@ public class CameraController : MonoBehaviour, IDebugLoggable
 
     public void SetViewMovementSpeed(int newValue)
     {
-        if (_mapCamera != null)
+        if (_mapVirtualCamera != null)
         {
             newValue = Mathf.Max(newValue, 0);
             _cameraMoveSpeed = newValue;
@@ -252,6 +253,21 @@ public class CameraController : MonoBehaviour, IDebugLoggable
             
 
         }
+    }
+
+    public Vector3 GetCameraPosition()
+    {
+        return _mapVirtualCamera.transform.position;
+    }
+
+    public Vector3 GetForwardCameraPerspectiveVector()
+    {
+        return _mapVirtualCamera.transform.TransformVector(Vector3.forward);
+    }
+
+    public Vector3 GetWorldPositionFromScreenPoint(Vector2 screenPoint)
+    {
+        return _mapUnityCamera.ScreenToWorldPoint(new(screenPoint.x, screenPoint.y, int.MaxValue));
     }
 
 
