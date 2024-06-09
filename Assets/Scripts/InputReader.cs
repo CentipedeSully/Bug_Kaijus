@@ -1,9 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using UnityEditor;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 
 
 public class InputReader : MonoBehaviour, IDebugLoggable
@@ -34,8 +37,9 @@ public class InputReader : MonoBehaviour, IDebugLoggable
 
 
 
-    //Monobehaviors
 
+    //Monobehaviors
+ 
 
 
     //Internal
@@ -176,6 +180,29 @@ public class InputReader : MonoBehaviour, IDebugLoggable
 
             if (_showDebug)
                 LogDebug.Log($"Detected Cycle Input: {(int)cycleInput}", this);
+        }
+    }
+
+
+    public Vector2 GetMousePositionOnScreen()
+    {
+        if (Mouse.current != null)
+        {
+            //get mouse position
+            Vector2 mousePosition = Mouse.current.position.value;
+
+            //bound mouse to player screen
+            int xClamped = Mathf.Clamp((int)mousePosition.x, 0, Screen.width);
+            int yClamped = Mathf.Clamp((int)mousePosition.y, 0, Screen.height);
+
+            //return the bound position
+            return new (xClamped, yClamped);
+        }
+            
+        else
+        {
+            LogDebug.Warn("Attempting to get mouse position of NULL mouse. Returning NEGATIVE INFINITY as the mouse's screen position.", this);
+            return Vector2.negativeInfinity;
         }
     }
 

@@ -147,7 +147,7 @@ Transform:
   m_GameObject: {fileID: 138737647}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 900, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -522,7 +522,7 @@ Transform:
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalPosition: {x: 0, y: 900, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -773,7 +773,7 @@ Transform:
   m_GameObject: {fileID: 761435090}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 900, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1231,8 +1231,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1239402730}
   - component: {fileID: 1239402731}
-  m_Layer: 0
-  m_Name: Mouse Controller
+  m_Layer: 6
+  m_Name: Manipulator Controller
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1247,7 +1247,7 @@ Transform:
   m_GameObject: {fileID: 1239402729}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 4.15, y: 0, z: 0.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1265,6 +1265,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0a529698f64e846943bd336ebfa56d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _mouseScreenPosition: {x: 0, y: 0}
+  _inputReader: {fileID: 761435093}
+  _isDebugActive: 0
+  _debugGizmoPrefab: {fileID: 6035540245819370937, guid: 1b118cea7a4cd534c8d947386d0bb277,
+    type: 3}
 --- !u!1 &1487485354
 GameObject:
   m_ObjectHideFlags: 3
