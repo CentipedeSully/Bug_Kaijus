@@ -214,7 +214,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 200
   field of view: 60.000004
   orthographic: 0
   orthographic size: 5
@@ -563,7 +563,7 @@ GameObject:
   - component: {fileID: 551153960}
   - component: {fileID: 551153959}
   - component: {fileID: 551153958}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ground Plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -715,7 +715,7 @@ MonoBehaviour:
     FieldOfView: 60.000004
     OrthographicSize: 5
     NearClipPlane: 0.3
-    FarClipPlane: 1000
+    FarClipPlane: 200
     Dutch: 0
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
@@ -1118,7 +1118,8 @@ MonoBehaviour:
   _currentCameraFocus: {fileID: 0}
   _literalCamFocusPrefab: {fileID: 7201616478167502485, guid: 0ff920f149bd51c4d986d68e850cad93,
     type: 3}
-  _mapCamera: {fileID: 690887782}
+  _mapVirtualCamera: {fileID: 690887782}
+  _mapUnityCamera: {fileID: 330585545}
   _isDebugActive: 0
   _DEBUG_setTargetAsFocus: 0
   _DEBUG_focusTarget: {fileID: 360322291}
@@ -1231,7 +1232,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1239402730}
   - component: {fileID: 1239402731}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Manipulator Controller
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1265,11 +1266,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0a529698f64e846943bd336ebfa56d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _terrainLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  _maxCastDistance: 400
   _mouseScreenPosition: {x: 0, y: 0}
+  _terrainContactPosition: {x: 0, y: 0, z: 0}
   _inputReader: {fileID: 761435093}
+  _camController: {fileID: 847006925}
   _isDebugActive: 0
-  _debugGizmoPrefab: {fileID: 6035540245819370937, guid: 1b118cea7a4cd534c8d947386d0bb277,
+  _terrainVisualizerPrefab: {fileID: 6035540245819370937, guid: 1b118cea7a4cd534c8d947386d0bb277,
     type: 3}
+  _cameraProjectionGizmoColor: {r: 1, g: 0, b: 1, a: 1}
+  _mousePositionGizmoColor: {r: 0, g: 1, b: 0, a: 1}
 --- !u!1 &1487485354
 GameObject:
   m_ObjectHideFlags: 3
@@ -1444,7 +1453,7 @@ GameObject:
   - component: {fileID: 1787687907}
   - component: {fileID: 1787687906}
   - component: {fileID: 1787687905}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player Actor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
