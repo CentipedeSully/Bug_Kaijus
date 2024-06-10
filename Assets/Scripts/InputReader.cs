@@ -194,7 +194,7 @@ public class InputReader : MonoBehaviour, IDebugLoggable
             //bound mouse to player screen
             int xClamped = Mathf.Clamp((int)mousePosition.x, 0, Screen.width);
             int yClamped = Mathf.Clamp((int)mousePosition.y, 0, Screen.height);
-
+             
             //return the bound position
             return new (xClamped, yClamped);
         }

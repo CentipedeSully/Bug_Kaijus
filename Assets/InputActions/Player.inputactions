@@ -15,7 +15,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Action",
+                    "name": "Context Action",
                     "type": "Button",
                     "id": "c753cd00-1b99-4ffd-9a41-0fc0d573b6cf",
                     "expectedControlType": "Button",
@@ -88,7 +88,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "PC",
-                    "action": "Action",
+                    "action": "Context Action",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

@@ -2,34 +2,53 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public interface IInteractible
+{
+    GameObject GetGameObject();
+
+    void OnHoverEnter();
+
+    void OnHoverExit();
+
+    void OnSelect();
+
+    void OnDeselect();
+
+    void OnContextAction();
+
+    void OnAuillaryClick();
+}
+
 public class ManipulatorController : MonoBehaviour, IDebugLoggable
 {
     //Delcarations
     [Header("Manipulator Settings")]
-    [Tooltip("A visualizer will be drawn at the contact point between the player's hovering mouse and the closest terrainLayer object")]
-    [SerializeField] private LayerMask _terrainLayers;
+    [Tooltip("" +
+        "Anything belonging to this layermask will be detected by the manipulator. " +
+        "Interactibles include terrain, actors, and other physical objects of interest")]
+    [SerializeField] private LayerMask _interactiblesLayer;
     [SerializeField] [Min(0)] private float _maxCastDistance = 400;
 
 
     [Header("States, Utilities & References")]
     [SerializeField] private Vector2 _mouseScreenPosition;
-    [SerializeField] private Vector3 _terrainContactPosition;
+    [SerializeField] private GameObject _closestDetection;
+    [SerializeField] private Vector3 _pointOfHoveringContact;
+    [SerializeField] private GameObject _lastObjectHovered;
     [SerializeField] private InputReader _inputReader;
     [SerializeField] private CameraController _camController;
+    private bool _isCameraGizmoDrawable = false;
+
+    private Vector3 _cameraOrigin;
+    private Vector3 _cameraForwardsDirection;
+    private Vector3 _mouseWorldPosition;
 
     [Header("Debug Settings")]
     [SerializeField] private bool _isDebugActive = false;
     [SerializeField] private GameObject _terrainVisualizerPrefab;
     private GameObject _terrainVisualizerObj;
 
-
-    private bool _isCameraGizmoDrawable = false;
-
-    private Vector3 _cameraOrigin;
-    private Vector3 _cameraForwardsDirection;
     [SerializeField] private Color _cameraProjectionGizmoColor = Color.magenta;
-
-    private Vector3 _mouseWorldPosition;
     [SerializeField] private Color _mousePositionGizmoColor = Color.green;
 
     
@@ -40,7 +59,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
     //Monobehaviours
     private void Start()
     {
-        CreateDebugGizmo();
+        CreateTerrainVisualizer();
     }
 
     private void Update()
@@ -55,7 +74,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
 
     //Internal Utils
-    private void CreateDebugGizmo()
+    private void CreateTerrainVisualizer()
     {
         if (_terrainVisualizerPrefab != null)
         {
@@ -63,6 +82,8 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             _terrainVisualizerObj.transform.SetParent(transform);
             _terrainVisualizerObj.transform.position = Vector3.zero;
         }
+        else
+            LogDebug.Error("TerrainVisualObj is empty", this);
             
     }
 
@@ -81,20 +102,18 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
                 //enable gizmo visibility to help visualize our mouse-pointer raycast
                 _isCameraGizmoDrawable = true;
 
-                //Get Camera Origin (world coords)
+                //Get Camera world coords & forwards direction
                 _cameraOrigin = _camController.GetCameraPosition();
-
-                //Get Camera's forwards direction (world coords)
                 _cameraForwardsDirection = _camController.GetForwardCameraPerspectiveVector();
 
-                //Calculate the mouse's relational screenToWorld position
+                //Get worldMousePosition
                 _mouseWorldPosition = _camController.GetWorldPositionFromScreenPoint(_mouseScreenPosition);
 
-                //Get mouse contact point with any TerrainLayer objects
-                _terrainContactPosition = CalculateClosestTerrainContact();
+                //Capture the closest interactible that our mouse is currently hovering over
+                DetectClosestInteractible();
 
                 //Move terrain visualizer to contact point
-                _terrainVisualizerObj.transform.position = _terrainContactPosition;
+                _terrainVisualizerObj.transform.position = _pointOfHoveringContact;
             }
 
             //otherwise log warning of missing mouse
@@ -115,17 +134,46 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
     }
 
-    private Vector3 CalculateClosestTerrainContact()
+    private void DetectClosestInteractible()
     {
         Vector3 mouseDirection = (_mouseWorldPosition - _cameraOrigin).normalized;
-        RaycastHit[] hits = Physics.RaycastAll(_cameraOrigin, mouseDirection, _maxCastDistance, _terrainLayers);
+        RaycastHit[] hits = Physics.RaycastAll(_cameraOrigin, mouseDirection, _maxCastDistance, _interactiblesLayer);
 
         if (hits.Length > 0)
         {
-            //LogDebug.Log($"Closest Object Hit: {hits[hits.Length -1].transform.gameObject.name}, Location: {hits[hits.Length - 1].point}",this);
-            return hits[hits.Length - 1].point;
+            GameObject detectedObject = hits[hits.Length - 1].transform.gameObject;
+
+            //save the contact point
+            _pointOfHoveringContact = hits[hits.Length - 1].point;
+
+            // Trigger OnHover Enter/Exit functions if applicable
+            if (_lastObjectHovered == null)
+            {
+                //save the new valid hovered object, and enter its hovered state
+                _lastObjectHovered = detectedObject;
+                _lastObjectHovered.GetComponent<IInteractible>().OnHoverEnter();
+            }
+            else if (_lastObjectHovered != detectedObject)
+            {
+                //update the previously hovered object as no longer being hovered over
+                _lastObjectHovered.GetComponent<IInteractible>().OnHoverExit();
+
+                //save the new valid hovered object, and enter its hovered state
+                _lastObjectHovered = detectedObject;
+                _lastObjectHovered.GetComponent<IInteractible>().OnHoverEnter();
+
+            }
+
+            //save the detected game object
+            _closestDetection = hits[hits.Length - 1].transform.gameObject;
         }
-        else return Vector3.zero;
+
+        else if (_lastObjectHovered != null)
+        {
+            //Trigger the onHoverExit function on the last object and forget it
+            _lastObjectHovered.GetComponent<IInteractible>().OnHoverExit();
+            _lastObjectHovered = null;
+        }
         
         
 
@@ -137,7 +185,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
         {
             Gizmos.color = _cameraProjectionGizmoColor;
 
-            //Make sure we're  looking in the same direction as our camera
+            //Make sure we're looking in the same direction as our camera
             Gizmos.DrawLine(_cameraOrigin, _cameraOrigin + (_cameraForwardsDirection * 200));
 
 
@@ -145,7 +193,6 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             Gizmos.color = _mousePositionGizmoColor;
 
             //Draw the mouse's relational position vector
-            //Gizmos.DrawLine(_cameraOrigin, _mouseWorldPosition + (_cameraForwardsDirection * 200));
             Vector3 mouseDirection = (_mouseWorldPosition - _cameraOrigin).normalized;
             Gizmos.DrawLine(_cameraOrigin, _cameraOrigin + (mouseDirection * _maxCastDistance));
         }
@@ -154,7 +201,27 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
 
     //External Utils
+    public void SetTerrainVisualizerPosition(Vector3 newPosition)
+    {
+        _terrainVisualizerObj.transform.position = newPosition;
+    }
 
+    public Vector3 GetCurrentHoverContactPoint()
+    {
+        return _pointOfHoveringContact;
+    }
+
+    public void ShowTerrainVisualizer()
+    {
+        if (!_terrainVisualizerObj.activeSelf)
+            _terrainVisualizerObj.SetActive(true);
+    }
+
+    public void HideTerrainVisualizer()
+    {
+        if (_terrainVisualizerObj.activeSelf)
+            _terrainVisualizerObj.SetActive(false);
+    }
 
 
 
@@ -171,3 +238,6 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
 
 }
+
+
+
