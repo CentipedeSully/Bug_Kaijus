@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
-public interface IInteractible
+public interface IInteractable
 {
     GameObject GetGameObject();
+
+    InteractableType Type();
 
     void OnHoverEnter();
 
@@ -17,6 +20,13 @@ public interface IInteractible
     void OnContextAction();
 
     void OnAuillaryClick();
+}
+
+public enum InteractableType
+{
+    Terrain,
+    Actor,
+    Interactable
 }
 
 public class ManipulatorController : MonoBehaviour, IDebugLoggable
@@ -32,9 +42,11 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
     [Header("States, Utilities & References")]
     [SerializeField] private Vector2 _mouseScreenPosition;
-    [SerializeField] private GameObject _closestDetection;
+    [SerializeField] private GameObject _selectedObject;
+    private Vector3 _selectionPoint;
     [SerializeField] private Vector3 _pointOfHoveringContact;
     [SerializeField] private GameObject _lastObjectHovered;
+    [SerializeField] private GameObject _playerActor;
     [SerializeField] private InputReader _inputReader;
     [SerializeField] private CameraController _camController;
     private bool _isCameraGizmoDrawable = false;
@@ -87,6 +99,16 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             
     }
 
+    private void UpdateRaycastUtilities()
+    {
+        //Get Camera world coords & forwards direction
+        _cameraOrigin = _camController.GetCameraPosition();
+        _cameraForwardsDirection = _camController.GetForwardCameraPerspectiveVector();
+
+        //Get worldMousePosition
+        _mouseWorldPosition = _camController.GetWorldPositionFromScreenPoint(_mouseScreenPosition);
+    }
+
     private void TrackMousePointer()
     {
         //Validate the existence of our tools
@@ -102,15 +124,10 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
                 //enable gizmo visibility to help visualize our mouse-pointer raycast
                 _isCameraGizmoDrawable = true;
 
-                //Get Camera world coords & forwards direction
-                _cameraOrigin = _camController.GetCameraPosition();
-                _cameraForwardsDirection = _camController.GetForwardCameraPerspectiveVector();
-
-                //Get worldMousePosition
-                _mouseWorldPosition = _camController.GetWorldPositionFromScreenPoint(_mouseScreenPosition);
+                UpdateRaycastUtilities();
 
                 //Capture the closest interactible that our mouse is currently hovering over
-                DetectClosestInteractible();
+                CaptureHoveredObjects();
 
                 //Move terrain visualizer to contact point
                 _terrainVisualizerObj.transform.position = _pointOfHoveringContact;
@@ -134,7 +151,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
     }
 
-    private void DetectClosestInteractible()
+    private void CaptureHoveredObjects()
     {
         Vector3 mouseDirection = (_mouseWorldPosition - _cameraOrigin).normalized;
         RaycastHit[] hits = Physics.RaycastAll(_cameraOrigin, mouseDirection, _maxCastDistance, _interactiblesLayer);
@@ -151,32 +168,27 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             {
                 //save the new valid hovered object, and enter its hovered state
                 _lastObjectHovered = detectedObject;
-                _lastObjectHovered.GetComponent<IInteractible>().OnHoverEnter();
+                _lastObjectHovered.GetComponent<IInteractable>().OnHoverEnter();
             }
             else if (_lastObjectHovered != detectedObject)
             {
                 //update the previously hovered object as no longer being hovered over
-                _lastObjectHovered.GetComponent<IInteractible>().OnHoverExit();
+                _lastObjectHovered.GetComponent<IInteractable>().OnHoverExit();
 
                 //save the new valid hovered object, and enter its hovered state
                 _lastObjectHovered = detectedObject;
-                _lastObjectHovered.GetComponent<IInteractible>().OnHoverEnter();
+                _lastObjectHovered.GetComponent<IInteractable>().OnHoverEnter();
 
             }
 
-            //save the detected game object
-            _closestDetection = hits[hits.Length - 1].transform.gameObject;
         }
 
         else if (_lastObjectHovered != null)
         {
             //Trigger the onHoverExit function on the last object and forget it
-            _lastObjectHovered.GetComponent<IInteractible>().OnHoverExit();
+            _lastObjectHovered.GetComponent<IInteractable>().OnHoverExit();
             _lastObjectHovered = null;
         }
-        
-        
-
     }
 
     private void DrawMousePointerGizmos()
@@ -198,6 +210,57 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
         }
     }
 
+    private void CaptureSelection()
+    {
+        UpdateRaycastUtilities();
+
+        Vector3 mouseDirection = (_mouseWorldPosition - _cameraOrigin).normalized;
+        RaycastHit[] hits = Physics.RaycastAll(_cameraOrigin, mouseDirection, _maxCastDistance, _interactiblesLayer);
+
+        if (hits.Length > 0)
+        {
+            GameObject detectedObject = hits[hits.Length - 1].transform.gameObject;
+
+            //save the contact point
+            _selectionPoint = hits[hits.Length - 1].point;
+
+            // Trigger OnSelect/Deselect functions if applicable
+            if (_selectedObject == null)
+            {
+                //save the selection
+                _selectedObject = detectedObject;
+
+                //Trigger the object's onSelect function
+                _selectedObject.GetComponent<IInteractable>().OnSelect();
+            }
+
+            else if (_selectedObject != detectedObject)
+            {
+                //Deselect the previous object
+                _selectedObject.GetComponent<IInteractable>().OnDeselect();
+
+                //Save the detected object as the new selection, then trigger the detected object's onSelect function
+                _selectedObject = detectedObject;
+                _selectedObject.GetComponent<IInteractable>().OnSelect();
+            }
+
+            // Deselect the object if double clicked
+            else if (_selectedObject == detectedObject)
+            {
+                //Reselect the terrain object if the detected object is terrain
+                if (detectedObject.GetComponent<IInteractable>().Type() == InteractableType.Terrain)
+                    _selectedObject.GetComponent<IInteractable>().OnSelect();
+
+                else
+                {
+                    //deselect the current selected object
+                    _selectedObject.GetComponent<IInteractable>().OnDeselect();
+                    _selectedObject = null;
+                }
+            }   
+        }
+    }
+
 
 
     //External Utils
@@ -211,6 +274,11 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
         return _pointOfHoveringContact;
     }
 
+    public Vector3 GetSelectionContactPoint()
+    {
+        return _selectionPoint;
+    }
+
     public void ShowTerrainVisualizer()
     {
         if (!_terrainVisualizerObj.activeSelf)
@@ -221,6 +289,16 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
     {
         if (_terrainVisualizerObj.activeSelf)
             _terrainVisualizerObj.SetActive(false);
+    }
+
+    public void TriggerPlayerMoveCommand(Vector3 destination)
+    {
+        _playerActor.GetComponent<ActorBehaviour>().MoveActor(destination);
+    }
+
+    public void CaptureSelectionOnInput()
+    {
+        CaptureSelection();
     }
 
 

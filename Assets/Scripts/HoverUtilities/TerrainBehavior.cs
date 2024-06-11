@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UpdateTerrainVisual : MonoBehaviour, IInteractible, IDebugLoggable
+public class TerrainBehavior : MonoBehaviour, IInteractable, IDebugLoggable
 {
     //Declarations
     [SerializeField] private ManipulatorController _manipulator;
@@ -40,7 +40,10 @@ public class UpdateTerrainVisual : MonoBehaviour, IInteractible, IDebugLoggable
         return gameObject;
     }
 
-    
+    public InteractableType Type()
+    {
+        return InteractableType.Terrain;
+    }
 
     public void OnAuillaryClick()
     {
@@ -54,7 +57,7 @@ public class UpdateTerrainVisual : MonoBehaviour, IInteractible, IDebugLoggable
 
     public void OnDeselect()
     {
-        throw new System.NotImplementedException();
+        LogDebug.Log("Terrain deselected",this);
     }
 
     public void OnHoverEnter()
@@ -69,7 +72,7 @@ public class UpdateTerrainVisual : MonoBehaviour, IInteractible, IDebugLoggable
 
     public void OnSelect()
     {
-        throw new System.NotImplementedException();
+        _manipulator.TriggerPlayerMoveCommand(_manipulator.GetSelectionContactPoint());
     }
 
 
@@ -84,7 +87,4 @@ public class UpdateTerrainVisual : MonoBehaviour, IInteractible, IDebugLoggable
     {
         return name;
     }
-
-
-
 }
