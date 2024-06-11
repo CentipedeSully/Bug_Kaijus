@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2471208997259734100}
   - component: {fileID: 8305126134124891438}
+  - component: {fileID: 2068081731678576503}
   - component: {fileID: 1592839605838557557}
   - component: {fileID: 6120532644594392334}
   - component: {fileID: 7231000964158168439}
@@ -48,7 +49,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b14892e80e0c9dd438a68536cc066629, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _onHoverColor: {r: 0.8301887, g: 0.8301887, b: 0.8301887, a: 1}
+  _isSelected: 0
+  _onHoverColor: {r: 1, g: 1, b: 1, a: 1}
+  _onSelectedColor: {r: 1, g: 0.65787435, b: 0, a: 1}
+--- !u!195 &2068081731678576503
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4207710483513766144}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 7
+  m_Acceleration: 999
+  avoidancePriority: 50
+  m_AngularSpeed: 999
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 1
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!33 &1592839605838557557
 MeshFilter:
   m_ObjectHideFlags: 0

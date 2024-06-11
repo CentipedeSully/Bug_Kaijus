@@ -129,8 +129,9 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
                 //Capture the closest interactible that our mouse is currently hovering over
                 CaptureHoveredObjects();
 
-                //Move terrain visualizer to contact point
-                _terrainVisualizerObj.transform.position = _pointOfHoveringContact;
+                //Move terrain visualizer to contact point if ther object is terrain
+                //_terrainVisualizerObj.transform.position = _pointOfHoveringContact;
+
             }
 
             //otherwise log warning of missing mouse
@@ -158,31 +159,39 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
         if (hits.Length > 0)
         {
-            GameObject detectedObject = hits[hits.Length - 1].transform.gameObject;
+            //prioritize detecting actors first
+            (GameObject,Vector3) closestDetection = FindClosestInteractableWithType(InteractableType.Actor, hits);
+
+            //Look for Terrain objects if no actors were found
+            if (closestDetection.Item1 == null)
+                closestDetection = FindClosestInteractableWithType(InteractableType.Terrain, hits);
+
+            LogDebug.Log($"{hits.Length} Detected Hoverables: Selecting {closestDetection.Item1.name} from collection",this);
 
             //save the contact point
-            _pointOfHoveringContact = hits[hits.Length - 1].point;
+            _pointOfHoveringContact = closestDetection.Item2;
 
             // Trigger OnHover Enter/Exit functions if applicable
             if (_lastObjectHovered == null)
             {
                 //save the new valid hovered object, and enter its hovered state
-                _lastObjectHovered = detectedObject;
+                _lastObjectHovered = closestDetection.Item1;
                 _lastObjectHovered.GetComponent<IInteractable>().OnHoverEnter();
             }
-            else if (_lastObjectHovered != detectedObject)
+            else if (_lastObjectHovered != closestDetection.Item1)
             {
                 //update the previously hovered object as no longer being hovered over
                 _lastObjectHovered.GetComponent<IInteractable>().OnHoverExit();
 
                 //save the new valid hovered object, and enter its hovered state
-                _lastObjectHovered = detectedObject;
+                _lastObjectHovered = closestDetection.Item1;
                 _lastObjectHovered.GetComponent<IInteractable>().OnHoverEnter();
 
             }
 
         }
-
+        
+        //Remove the last object hovered if we aren't hovering over anything anymore
         else if (_lastObjectHovered != null)
         {
             //Trigger the onHoverExit function on the last object and forget it
@@ -219,36 +228,41 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
         if (hits.Length > 0)
         {
-            GameObject detectedObject = hits[hits.Length - 1].transform.gameObject;
+            //prioritize detecting actors first
+            (GameObject, Vector3) closestDetection = FindClosestInteractableWithType(InteractableType.Actor, hits);
+
+            //Look for Terrain objects if no actors were found
+            if (closestDetection.Item1 == null)
+                closestDetection = FindClosestInteractableWithType(InteractableType.Terrain, hits);
 
             //save the contact point
-            _selectionPoint = hits[hits.Length - 1].point;
+            _selectionPoint = closestDetection.Item2;
 
             // Trigger OnSelect/Deselect functions if applicable
             if (_selectedObject == null)
             {
                 //save the selection
-                _selectedObject = detectedObject;
+                _selectedObject = closestDetection.Item1;
 
                 //Trigger the object's onSelect function
                 _selectedObject.GetComponent<IInteractable>().OnSelect();
             }
 
-            else if (_selectedObject != detectedObject)
+            else if (_selectedObject != closestDetection.Item1)
             {
                 //Deselect the previous object
                 _selectedObject.GetComponent<IInteractable>().OnDeselect();
 
                 //Save the detected object as the new selection, then trigger the detected object's onSelect function
-                _selectedObject = detectedObject;
+                _selectedObject = closestDetection.Item1;
                 _selectedObject.GetComponent<IInteractable>().OnSelect();
             }
 
             // Deselect the object if double clicked
-            else if (_selectedObject == detectedObject)
+            else if (_selectedObject == closestDetection.Item1)
             {
                 //Reselect the terrain object if the detected object is terrain
-                if (detectedObject.GetComponent<IInteractable>().Type() == InteractableType.Terrain)
+                if (closestDetection.Item1.GetComponent<IInteractable>().Type() == InteractableType.Terrain)
                     _selectedObject.GetComponent<IInteractable>().OnSelect();
 
                 else
@@ -261,7 +275,20 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
         }
     }
 
+    private (GameObject, Vector3) FindClosestInteractableWithType(InteractableType type, RaycastHit[] detections)
+    {
+        for (int i = detections.Length -1; i >= 0; i--)
+        {
+            GameObject possibleMatch = detections[i].collider.gameObject;
+            if (possibleMatch.GetComponent<IInteractable>().Type() == type)
+            {
+                return (possibleMatch, detections[i].point);
+            }
+                
+        }
 
+        return (null,Vector3.zero);
+    }
 
     //External Utils
     public void SetTerrainVisualizerPosition(Vector3 newPosition)
