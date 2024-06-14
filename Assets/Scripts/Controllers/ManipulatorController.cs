@@ -56,7 +56,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
     private Vector3 _mouseWorldPosition;
 
     [Header("Debug Settings")]
-    [SerializeField] private bool _isDebugActive = false;
+    //[SerializeField] private bool _isDebugActive = false;
     [SerializeField] private GameObject _terrainVisualizerPrefab;
     private GameObject _terrainVisualizerObj;
 

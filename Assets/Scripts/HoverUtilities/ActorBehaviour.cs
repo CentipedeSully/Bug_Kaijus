@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+
 public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
 {
     //Declarations
@@ -11,7 +12,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
     [SerializeField] private Color _onHoverColor;
     [SerializeField] private Color _onSelectedColor;
     private NavMeshAgent _navAgent;
-
+    private IAbilityBehavior _basicAttack;
 
 
 
