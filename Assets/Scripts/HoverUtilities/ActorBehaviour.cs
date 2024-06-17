@@ -95,10 +95,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
                 //calculate the target's distance
                 _distanceFromTarget = transform.InverseTransformVector(_currentTarget.transform.position).magnitude;
 
-                //check if we're facing the target
-                //...
 
-                if (_distanceFromTarget <= _basicAttack.GetComponent<IAbilityBehavior>().GetRange()) //Also check if we're facing target
+                if (IsTargetInRange())
                 {
                     //stop moving
                     _navAgent.ResetPath();
@@ -114,6 +112,11 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             }
 
         }
+    }
+
+    private bool IsTargetInRange()
+    {
+        return _basicAttack.GetComponent<IAbilityBehavior>().IsObjectInRange(_currentTarget);
     }
 
     

@@ -14,7 +14,7 @@ public interface IAbilityBehavior
     string GetUiDescription();
 
 
-    float GetRange();
+    bool IsObjectInRange(GameObject targetObject);
     void SetTargetLocation(Vector3 position);
     void ShowFieldOfEffect(Vector3 position);
     void HideFieldOfEffectRange();
@@ -137,10 +137,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
             _visualizerObject.transform.position = boundVector;
         }
     }
-    public float GetRange()
-    {
-        return _abilityRange;
-    }
+    public abstract bool IsObjectInRange(GameObject targetObject);
     public virtual void ShowFieldOfEffect(Vector3 position)
     {
         if (!_isShowingVisualizer)
