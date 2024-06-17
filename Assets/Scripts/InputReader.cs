@@ -111,7 +111,7 @@ public class InputReader : MonoBehaviour, IDebugLoggable
         }
     }
 
-    public void DetectAuxillaryInput(InputAction.CallbackContext context)
+    public void DetectAuxiliaryInput(InputAction.CallbackContext context)
     {
         if (_isAuxInputReady && context.phase == InputActionPhase.Performed)
         {

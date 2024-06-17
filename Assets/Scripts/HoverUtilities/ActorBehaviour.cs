@@ -4,15 +4,35 @@ using UnityEngine;
 using UnityEngine.AI;
 
 
-public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
+public interface IActorBehavior
+{
+    GameObject GetGameObject();
+
+    void MoveActorToDestination(Vector3 position);
+
+    void PerformAbility(int abilitySlot = 0, GameObject target = null);
+
+    void ClearCurrentCommand();
+
+}
+
+public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior
 {
     //Declarations
+    [Header("States")]
+    [SerializeField] private bool _isInCombat = false;
+    [SerializeField] private bool _isFacingTarget = false;
+    [SerializeField] private float _distanceFromTarget;
+    [SerializeField] private GameObject _currentTarget;
+
+    [Header("Settings")]
     private Color _originalColor;
     [SerializeField] private bool _isSelected = false;
     [SerializeField] private Color _onHoverColor;
     [SerializeField] private Color _onSelectedColor;
+    [SerializeField] private GameObject _targetedVisualObj;
     private NavMeshAgent _navAgent;
-    private IAbilityBehavior _basicAttack;
+    [SerializeField] private GameObject _basicAttack;
 
 
 
@@ -21,6 +41,11 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
     {
         _originalColor = GetComponent<Renderer>().material.color;
         _navAgent = GetComponent<NavMeshAgent>();
+    }
+
+    private void Update()
+    {
+        PursueTarget();
     }
 
 
@@ -56,6 +81,42 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
     }
 
 
+    private void PursueTarget()
+    {
+        //if we're in combat and not currently performing an ability
+        if (_isInCombat && !_basicAttack.GetComponent<IAbilityBehavior>().IsAbilityInProgress())
+        {
+            //Leave combat if the target vanished
+            if (_currentTarget == null)
+                ClearCurrentCommand();
+
+            else
+            {
+                //calculate the target's distance
+                _distanceFromTarget = transform.InverseTransformVector(_currentTarget.transform.position).magnitude;
+
+                //check if we're facing the target
+                //...
+
+                if (_distanceFromTarget <= _basicAttack.GetComponent<IAbilityBehavior>().GetRange()) //Also check if we're facing target
+                {
+                    //stop moving
+                    _navAgent.ResetPath();
+
+                    //perform the action
+                    _basicAttack.GetComponent<IAbilityBehavior>().PerformAbility();
+                }
+                    
+
+                //else approach target
+                else
+                    MoveActorToDestination(_currentTarget.transform.position);
+            }
+
+        }
+    }
+
+    
 
     //Externals
     public GameObject GetGameObject()
@@ -68,14 +129,18 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
         return InteractableType.Actor;
     }
 
-    public void OnAuillaryClick()
+    public void OnAuxiliaryClick()
     {
-        throw new System.NotImplementedException();
+        LogDebug.Log($"AuxClick detected on actor: ${name}", this);
+        
     }
 
     public void OnContextAction()
     {
-        throw new System.NotImplementedException();
+        //LogDebug.Log($"ContextCommand detected on actor: ${name}", this);
+        
+        //Trigger hostile actionVisual
+        OnTargetedByPlayer();
     }
 
     public void OnDeselect()
@@ -98,10 +163,52 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable
         ShowSelectedVisual();
     }
 
-    public void MoveActor(Vector3 destination)
+    public void OnTargetedByPlayer()
+    {
+        if (!_targetedVisualObj.activeSelf)
+            _targetedVisualObj.SetActive(true);
+    }
+
+    public void OnUntargetedByPlayer()
+    {
+        if (_targetedVisualObj.activeSelf)
+            _targetedVisualObj.SetActive(false);
+    }
+
+    public void MoveActorToDestination(Vector3 destination)
     {
         _navAgent.SetDestination(destination);
     }
+
+    public void PerformAbility(int abilitySlot = 0, GameObject target = null)
+    {
+        // 0 is the default core ability (currently basic attack)
+        if (abilitySlot == 0 && target != null)
+        {
+            _isInCombat = true;
+            _currentTarget = target;
+        }
+    }
+
+    public void ClearCurrentCommand()
+    {
+        if (_isInCombat)
+        {
+            _isInCombat = false;
+
+            //Deselect and clear the target
+            if (_currentTarget != null)
+                _currentTarget.GetComponent<IInteractable>().OnUntargetedByPlayer();
+
+            _currentTarget = null;
+        }
+
+        //stop current pathing
+        _navAgent.ResetPath();
+        
+
+    }
+
 
 
     //Debugging

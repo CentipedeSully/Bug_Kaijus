@@ -23,10 +23,14 @@ public class BasicMelee : Ability
     //Externals
     public override void InterruptAbility()
     {
-
+        if (IsAbilityInProgress())
+        {
+            LogDebug.Log($"Ability {this.name} interrupted!",this);
+            EndAbility();
+        }
     }
 
-    public override void StartAbility()
+    public override void PerformAbility()
     {
         EnterAbility();
         LogDebug.Log("Melee Atk Triggered", this);

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -19,7 +20,11 @@ public interface IInteractable
 
     void OnContextAction();
 
-    void OnAuillaryClick();
+    void OnAuxiliaryClick();
+
+    void OnTargetedByPlayer();
+
+    void OnUntargetedByPlayer();
 }
 
 public enum InteractableType
@@ -27,6 +32,13 @@ public enum InteractableType
     Terrain,
     Actor,
     Interactable
+}
+
+public enum InputType
+{
+    Select,
+    ContextualAction,
+    AuxillaryAction
 }
 
 public class ManipulatorController : MonoBehaviour, IDebugLoggable
@@ -41,6 +53,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
 
     [Header("States, Utilities & References")]
+    //[SerializeField] private GameObject _currentActionTarget;
     [SerializeField] private Vector2 _mouseScreenPosition;
     [SerializeField] private GameObject _selectedObject;
     private Vector3 _selectionPoint;
@@ -166,7 +179,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             if (closestDetection.Item1 == null)
                 closestDetection = FindClosestInteractableWithType(InteractableType.Terrain, hits);
 
-            LogDebug.Log($"{hits.Length} Detected Hoverables: Selecting {closestDetection.Item1.name} from collection",this);
+            //LogDebug.Log($"{hits.Length} Detected Hoverables: Selecting {closestDetection.Item1.name} from collection",this);
 
             //save the contact point
             _pointOfHoveringContact = closestDetection.Item2;
@@ -219,7 +232,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
         }
     }
 
-    private void CaptureSelection()
+    private void PerformInputActionOnHoveredInteractible(InputType typeOfInput)
     {
         UpdateRaycastUtilities();
 
@@ -238,40 +251,59 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
             //save the contact point
             _selectionPoint = closestDetection.Item2;
 
-            // Trigger OnSelect/Deselect functions if applicable
-            if (_selectedObject == null)
+            if (typeOfInput == InputType.Select)
             {
-                //save the selection
-                _selectedObject = closestDetection.Item1;
-
-                //Trigger the object's onSelect function
-                _selectedObject.GetComponent<IInteractable>().OnSelect();
-            }
-
-            else if (_selectedObject != closestDetection.Item1)
-            {
-                //Deselect the previous object
-                _selectedObject.GetComponent<IInteractable>().OnDeselect();
-
-                //Save the detected object as the new selection, then trigger the detected object's onSelect function
-                _selectedObject = closestDetection.Item1;
-                _selectedObject.GetComponent<IInteractable>().OnSelect();
-            }
-
-            // Deselect the object if double clicked
-            else if (_selectedObject == closestDetection.Item1)
-            {
-                //Reselect the terrain object if the detected object is terrain
-                if (closestDetection.Item1.GetComponent<IInteractable>().Type() == InteractableType.Terrain)
-                    _selectedObject.GetComponent<IInteractable>().OnSelect();
-
-                else
+                // Trigger OnSelect/Deselect functions if applicable
+                if (_selectedObject == null)
                 {
-                    //deselect the current selected object
-                    _selectedObject.GetComponent<IInteractable>().OnDeselect();
-                    _selectedObject = null;
+                    //save the selection
+                    _selectedObject = closestDetection.Item1;
+
+                    //Trigger the object's onSelect function
+                    _selectedObject.GetComponent<IInteractable>().OnSelect();
                 }
-            }   
+
+                else if (_selectedObject != closestDetection.Item1)
+                {
+                    //Deselect the previous object
+                    _selectedObject.GetComponent<IInteractable>().OnDeselect();
+
+                    //Save the detected object as the new selection, then trigger the detected object's onSelect function
+                    _selectedObject = closestDetection.Item1;
+                    _selectedObject.GetComponent<IInteractable>().OnSelect();
+                }
+
+                // Deselect the object if double clicked
+                else if (_selectedObject == closestDetection.Item1)
+                {
+                    //Reselect the terrain object if the detected object is terrain
+                    if (closestDetection.Item1.GetComponent<IInteractable>().Type() == InteractableType.Terrain)
+                    {
+                        //Clear the player's current command.
+                        _playerActor.GetComponent<IActorBehavior>().ClearCurrentCommand();
+
+                        //Trigger the Terrain's OnSelect, which will move the player
+                        _selectedObject.GetComponent<IInteractable>().OnSelect();
+                    }
+                        
+
+                    else
+                    {
+                        //deselect the current selected object
+                        _selectedObject.GetComponent<IInteractable>().OnDeselect();
+                        _selectedObject = null;
+                    }
+                }
+            }
+            
+            else if (typeOfInput == InputType.ContextualAction)
+                SetActionTarget(closestDetection.Item1);
+
+            else if (typeOfInput == InputType.AuxillaryAction)
+            {
+                //Trigger the detected object's auxillary behavior
+                closestDetection.Item1.GetComponent<IInteractable>().OnAuxiliaryClick();
+            }
         }
     }
 
@@ -289,6 +321,9 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
         return (null,Vector3.zero);
     }
+
+
+
 
     //External Utils
     public void SetTerrainVisualizerPosition(Vector3 newPosition)
@@ -320,12 +355,28 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
 
     public void TriggerPlayerMoveCommand(Vector3 destination)
     {
-        _playerActor.GetComponent<ActorBehaviour>().MoveActor(destination);
+        _playerActor.GetComponent<ActorBehaviour>().MoveActorToDestination(destination);
     }
 
-    public void CaptureSelectionOnInput()
+    public void TriggerSelectionOnInput()
     {
-        CaptureSelection();
+        PerformInputActionOnHoveredInteractible(InputType.Select);
+    }
+
+    public void TriggerContextualActionOnInput()
+    {
+        PerformInputActionOnHoveredInteractible(InputType.ContextualAction);
+    }
+
+    public void TriggerAuxiliaryFunctionOnInput()
+    {
+        PerformInputActionOnHoveredInteractible(InputType.AuxillaryAction);
+    }
+
+    public void SetActionTarget(GameObject newTarget)
+    {
+        if (newTarget.GetComponent<IInteractable>().Type() == InteractableType.Actor)
+            _playerActor.GetComponent<IActorBehavior>().PerformAbility(0, newTarget);
     }
 
 

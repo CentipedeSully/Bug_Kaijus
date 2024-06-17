@@ -45,19 +45,19 @@ public class TerrainBehavior : MonoBehaviour, IInteractable, IDebugLoggable
         return InteractableType.Terrain;
     }
 
-    public void OnAuillaryClick()
+    public void OnAuxiliaryClick()
     {
-        throw new System.NotImplementedException();
+        LogDebug.Log($"AuxClick detected on Terrain", this);
     }
 
     public void OnContextAction()
     {
-        throw new System.NotImplementedException();
+        LogDebug.Log($"ContextClick detected on Terrain", this);
     }
 
     public void OnDeselect()
     {
-        LogDebug.Log("Terrain deselected",this);
+        //LogDebug.Log("Terrain deselected",this);
     }
 
     public void OnHoverEnter()
@@ -73,6 +73,16 @@ public class TerrainBehavior : MonoBehaviour, IInteractable, IDebugLoggable
     public void OnSelect()
     {
         _manipulator.TriggerPlayerMoveCommand(_manipulator.GetSelectionContactPoint());
+    }
+
+    public void OnTargetedByPlayer()
+    {
+        //nothing
+    }
+
+    public void OnUntargetedByPlayer()
+    {
+        //nothing
     }
 
 

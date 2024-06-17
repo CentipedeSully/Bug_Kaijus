@@ -29,7 +29,7 @@ public interface IAbilityBehavior
     bool IsAbilityCoolingDown();
 
 
-    void StartAbility();
+    void PerformAbility();
     void InterruptAbility();
 }
 
@@ -186,7 +186,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
 
 
 
-    public abstract void StartAbility();
+    public abstract void PerformAbility();
     public abstract void InterruptAbility();
 
 
