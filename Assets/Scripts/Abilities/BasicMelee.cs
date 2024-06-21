@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class BasicMelee : Ability
@@ -7,28 +8,47 @@ public class BasicMelee : Ability
     //Declarations
     [Header("Basic Melee Utilities")]
     [SerializeField] private LayerMask _detectableInteractables;
-    [SerializeField] private Color _attackRangeGizmoColor = Color.red;
     [SerializeField] private Vector3 _attackCastOrigin;
     [SerializeField] private Vector3 _attackRangeSize;
     private Vector3 _calculatedOrigin;
+    [SerializeField] private bool _debugShowAttackRangeObject = false;
+    [SerializeField] private GameObject _debugTestAttackRangeObject;
+
 
 
 
 
     //Monobehaviours
-    private void OnDrawGizmosSelected()
+    private void Update()
     {
-        DrawAttackRangeGizmo();
+        UpdateTargetingUtils();
     }
 
 
 
     //Internals
-    private void DrawAttackRangeGizmo()
+    private void UpdateTargetingUtils()
     {
-        Gizmos.color = _attackRangeGizmoColor;
+        //update the displaced attack origin (for the boxcast)
         _calculatedOrigin = transform.position + transform.TransformDirection(_attackCastOrigin);
-        Gizmos.DrawWireCube(_calculatedOrigin, _attackRangeSize);
+
+        //update the debug visual's position & rotation (this is done to verify the boxcast's true position)
+        _debugTestAttackRangeObject.transform.localScale = _attackRangeSize;
+        _debugTestAttackRangeObject.transform.SetPositionAndRotation(_calculatedOrigin, transform.rotation);
+
+        //show the debug object if it's toggled.
+        if (_debugShowAttackRangeObject)
+        {
+            if (!_debugTestAttackRangeObject.activeSelf)
+                _debugTestAttackRangeObject.SetActive(true);
+        }
+
+        //otherwise, hide it if it's still on
+        else
+        {
+            if (_debugTestAttackRangeObject.activeSelf)
+                _debugTestAttackRangeObject.SetActive(false);
+        }
     }
 
 
@@ -53,8 +73,8 @@ public class BasicMelee : Ability
     public override bool IsObjectInRange(GameObject targetObject)
     {
         Vector3 halfExtendsAttackSize = new(_attackRangeSize.x / 2, _attackRangeSize.y / 2, _attackRangeSize.z / 2);
-        Collider[] hits = Physics.OverlapBox(_calculatedOrigin, halfExtendsAttackSize,Quaternion.identity, _detectableInteractables);
-
+        Collider[] hits = Physics.OverlapBox(_calculatedOrigin, halfExtendsAttackSize,transform.rotation, _detectableInteractables);
+        
         foreach (Collider hit in hits)
         {
             if (hit.gameObject == targetObject)
