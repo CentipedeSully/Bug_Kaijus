@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Rendering;
 
 
 public interface IActorBehavior
@@ -14,6 +15,10 @@ public interface IActorBehavior
 
     void ClearCurrentCommand();
 
+    void AddPursuer(GameObject pursuer);
+
+    void RemovePursuer(GameObject pursuer);
+
 }
 
 public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior
@@ -21,9 +26,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     //Declarations
     [Header("States")]
     [SerializeField] private bool _isInCombat = false;
-    [SerializeField] private bool _isFacingTarget = false;
-    [SerializeField] private float _distanceFromTarget;
     [SerializeField] private GameObject _currentTarget;
+    [SerializeField] private List<GameObject> _activePursuers = new List<GameObject>();
 
     [Header("Settings")]
     private Color _originalColor;
@@ -92,8 +96,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
             else
             {
-                //calculate the target's distance
-                _distanceFromTarget = transform.InverseTransformVector(_currentTarget.transform.position).magnitude;
+                //add this object as a pursuer of the target. (duplicate pusuers are ignored)
+                _currentTarget.GetComponent<IActorBehavior>().AddPursuer(gameObject);
 
 
                 if (IsTargetInRange())
@@ -102,7 +106,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
                     _navAgent.ResetPath();
 
                     //perform the action
-                    _basicAttack.GetComponent<IAbilityBehavior>().PerformAbility();
+                    _basicAttack.GetComponent<IAbilityBehavior>().TriggerAbility();
                 }
                     
 
@@ -140,10 +144,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     public void OnContextAction()
     {
-        //LogDebug.Log($"ContextCommand detected on actor: ${name}", this);
         
-        //Trigger hostile actionVisual
-        OnTargetedByPlayer();
     }
 
     public void OnDeselect()
@@ -164,18 +165,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     public void OnSelect()
     {
         ShowSelectedVisual();
-    }
-
-    public void OnTargetedByPlayer()
-    {
-        if (!_targetedVisualObj.activeSelf)
-            _targetedVisualObj.SetActive(true);
-    }
-
-    public void OnUntargetedByPlayer()
-    {
-        if (_targetedVisualObj.activeSelf)
-            _targetedVisualObj.SetActive(false);
     }
 
     public void MoveActorToDestination(Vector3 destination)
@@ -201,7 +190,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
             //Deselect and clear the target
             if (_currentTarget != null)
-                _currentTarget.GetComponent<IInteractable>().OnUntargetedByPlayer();
+                _currentTarget.GetComponent<IActorBehavior>().RemovePursuer(gameObject);
 
             _currentTarget = null;
         }
@@ -210,6 +199,36 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _navAgent.ResetPath();
         
 
+    }
+
+    public void ShowBeingPursuedVisual()
+    {
+        if (!_targetedVisualObj.activeSelf && _activePursuers.Count > 0)
+            _targetedVisualObj.SetActive(true);
+    }
+
+    public void HideBeingPursuedVisual()
+    {
+        if (_targetedVisualObj.activeSelf && _activePursuers.Count < 1)
+            _targetedVisualObj.SetActive(false);
+    }
+
+    public void AddPursuer(GameObject pursuer)
+    {
+        if (!_activePursuers.Contains(pursuer) && pursuer!= null)
+        {
+            _activePursuers.Add(pursuer);
+            ShowBeingPursuedVisual();
+        }
+    }
+
+    public void RemovePursuer(GameObject puruser)
+    {
+        if (_activePursuers.Contains(puruser) && puruser != null)
+        {
+            _activePursuers.Remove(puruser);
+            HideBeingPursuedVisual();
+        }
     }
 
 

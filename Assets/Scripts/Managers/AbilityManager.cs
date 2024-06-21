@@ -29,7 +29,7 @@ public interface IAbilityBehavior
     bool IsAbilityCoolingDown();
 
 
-    void PerformAbility();
+    void TriggerAbility();
     void InterruptAbility();
 }
 
@@ -52,7 +52,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
     [SerializeField] private Vector3 _targetLocation;
 
     [Header("References")]
-    [SerializeField] private GameObject _visualizerObject;
+    [SerializeField] private GameObject _abilityAreaVisualizerObject;
     [SerializeField] private ManipulatorController _manipulator;
 
 
@@ -61,16 +61,16 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
     private void Update()
     {
 
-        UpdateVisulizerPosition();
+        UpdateAbilityAreaVisulizerPosition();
     }
 
 
     //Internals
-    private void UpdateVisulizerPosition()
+    private void UpdateAbilityAreaVisulizerPosition()
     {
         if (_isShowingVisualizer)
             SetTargetLocation(_manipulator.GetCurrentHoverContactPoint());
-    }
+    } //For Abilities that require additional aiming
 
     protected virtual void EnterAbility()
     {
@@ -82,7 +82,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
     {
         _isInProgress = false;
         _isCoolingDown = true;
-        Invoke("ReadyAbility", _cooldownDuration);
+        Invoke(nameof(ReadyAbility), _cooldownDuration);
     }
 
     protected virtual void ReadyAbility()
@@ -90,6 +90,10 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
         _isCoolingDown = false;
         _isReady = true;
     }
+
+    protected abstract void PerformConcreteAbilityLogic();
+
+    protected abstract void PerformConcreteInterruption();
 
 
 
@@ -128,13 +132,13 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
 
         //Set the visualizer Object to anywhere within range
         if (Mathf.Abs(position.magnitude) <= _abilityRange)
-            _visualizerObject.transform.position = _targetLocation;
+            _abilityAreaVisualizerObject.transform.position = _targetLocation;
 
         //Or bound the visualizer within range
         else
         {
             Vector3 boundVector = _targetLocation.normalized * _abilityRange;
-            _visualizerObject.transform.position = boundVector;
+            _abilityAreaVisualizerObject.transform.position = boundVector;
         }
     }
     public abstract bool IsObjectInRange(GameObject targetObject);
@@ -143,7 +147,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
         if (!_isShowingVisualizer)
         {
             _isShowingVisualizer = true;
-            _visualizerObject.SetActive(true);
+            _abilityAreaVisualizerObject.SetActive(true);
         }
     }
     public virtual void HideFieldOfEffectRange()
@@ -151,7 +155,7 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
         if (_isShowingVisualizer)
         {
             _isShowingVisualizer = false;
-            _visualizerObject.SetActive(false);
+            _abilityAreaVisualizerObject.SetActive(false);
         }
     }
 
@@ -183,8 +187,19 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
 
 
 
-    public abstract void PerformAbility();
-    public abstract void InterruptAbility();
+    public void TriggerAbility()
+    {
+        if (_isReady)
+            PerformConcreteAbilityLogic();
+    }
+
+    public void InterruptAbility()
+    {
+        if (_isInProgress)
+            PerformConcreteInterruption();
+    }
+
+
 
 
     //Debugging

@@ -75,14 +75,13 @@ public class TerrainBehavior : MonoBehaviour, IInteractable, IDebugLoggable
         _manipulator.TriggerPlayerMoveCommand(_manipulator.GetSelectionContactPoint());
     }
 
-    public void OnTargetedByPlayer()
+    public void ShowBeingPursuedVisual()
     {
-        //nothing
+        
     }
-
-    public void OnUntargetedByPlayer()
+    public void HideBeingPursuedVisual()
     {
-        //nothing
+        
     }
 
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.Build;
 using UnityEngine;
 
 public class BasicMelee : Ability
@@ -51,24 +52,21 @@ public class BasicMelee : Ability
         }
     }
 
-
-
-    //Externals
-    public override void InterruptAbility()
+    protected override void PerformConcreteInterruption()
     {
-        if (IsAbilityInProgress())
-        {
-            LogDebug.Log($"Ability {this.name} interrupted!",this);
-            EndAbility();
-        }
-    }
-
-    public override void PerformAbility()
-    {
-        EnterAbility();
-        LogDebug.Log("Melee Atk Triggered", this);
+        LogDebug.Log($"Ability {this.name} interrupted!", this);
         EndAbility();
     }
+
+    protected override void PerformConcreteAbilityLogic()
+    {
+        EnterAbility();
+        LogDebug.Log("Performed Melee!",this);
+        EndAbility();
+    }
+
+    //Externals
+
 
     public override bool IsObjectInRange(GameObject targetObject)
     {

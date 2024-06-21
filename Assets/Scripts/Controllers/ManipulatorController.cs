@@ -22,9 +22,9 @@ public interface IInteractable
 
     void OnAuxiliaryClick();
 
-    void OnTargetedByPlayer();
+    void ShowBeingPursuedVisual();
 
-    void OnUntargetedByPlayer();
+    void HideBeingPursuedVisual();
 }
 
 public enum InteractableType
