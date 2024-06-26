@@ -19,15 +19,32 @@ public interface IActorBehavior
 
     void RemovePursuer(GameObject pursuer);
 
+    void OnDamaged(int damage);
+
 }
 
-public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior
+public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior, IDamageable
 {
     //Declarations
     [Header("States")]
+    [SerializeField] private bool _isInDamagedState = false;
     [SerializeField] private bool _isInCombat = false;
     [SerializeField] private GameObject _currentTarget;
     [SerializeField] private List<GameObject> _activePursuers = new List<GameObject>();
+
+    [Header("Abilities Settings")]
+    [SerializeField] private List<GameObject> _abilityList = new List<GameObject>();
+
+    [Header("Animation Settings")]
+    [SerializeField] private Animator _actorAnimator;
+    [SerializeField] private string _inCombatParam = "isInCombat";
+
+    [Header("OnDamaged Settings")]
+    [SerializeField] [Min(.05f)] private float _damagedDuration = .1f;
+    [SerializeField] private float _screenShakeTime = .1f;
+    [SerializeField] private bool _toggleScreenShake = true;
+    //[SerializeField] private ScreenShaker _screenShaker;
+    [SerializeField] private Color _onDamagedColor;
 
     [Header("Settings")]
     private Color _originalColor;
@@ -36,6 +53,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     [SerializeField] private Color _onSelectedColor;
     [SerializeField] private GameObject _targetedVisualObj;
     private NavMeshAgent _navAgent;
+    [SerializeField] private Renderer _modelRenderer;
     [SerializeField] private GameObject _basicAttack;
 
 
@@ -43,7 +61,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     //Monobehaviours
     private void Start()
     {
-        _originalColor = GetComponent<Renderer>().material.color;
+        if (_modelRenderer != null)
+            _originalColor = _modelRenderer.material.color;
         _navAgent = GetComponent<NavMeshAgent>();
     }
 
@@ -57,7 +76,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     //Internals
     private void SetColor(Color newColor)
     {
-        GetComponent<Renderer>().material.color = newColor;
+        if (_modelRenderer != null)
+            _modelRenderer.material.color = newColor;
     }
 
     private void ShowHoverVisual()
@@ -123,6 +143,12 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         return _basicAttack.GetComponent<IAbilityBehavior>().IsObjectInRange(_currentTarget);
     }
 
+    private void ResetDamagedVisual()
+    {
+        _isInDamagedState = false;
+        SetColor(_originalColor);
+    }
+
     
 
     //Externals
@@ -179,6 +205,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         {
             _isInCombat = true;
             _currentTarget = target;
+            _actorAnimator.SetBool( _inCombatParam, true);
         }
     }
 
@@ -187,6 +214,11 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         if (_isInCombat)
         {
             _isInCombat = false;
+            _actorAnimator.SetBool(_inCombatParam, false);
+
+            //interrupt current ability
+            if (_basicAttack.GetComponent<IAbilityBehavior>().IsAbilityInProgress())
+                _basicAttack.GetComponent<IAbilityBehavior>().InterruptAbility();
 
             //Deselect and clear the target
             if (_currentTarget != null)
@@ -230,6 +262,18 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             HideBeingPursuedVisual();
         }
     }
+
+    public void OnDamaged(int damage)
+    {
+        if (_isInDamagedState)
+            CancelInvoke(nameof(ResetDamagedVisual));
+
+        _isInDamagedState = true;
+        SetColor(_onDamagedColor);
+        Invoke(nameof(ResetDamagedVisual), _damagedDuration);
+    }
+
+    
 
 
 

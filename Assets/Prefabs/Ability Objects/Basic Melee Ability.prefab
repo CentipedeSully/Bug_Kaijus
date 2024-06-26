@@ -48,21 +48,22 @@ MonoBehaviour:
   _abilityName: Basic Melee
   _uiName: Basic Melee
   _uiDescription: Undefined Description
-  _cooldownDuration: 0.5
+  _cooldownDuration: 1
   _abilityRange: 5
   _isReady: 1
   _isInProgress: 0
   _isCoolingDown: 0
   _isShowingVisualizer: 0
   _targetLocation: {x: 0, y: 0, z: 0}
-  _visualizerObject: {fileID: 0}
+  _abilityAreaVisualizerObject: {fileID: 0}
   _manipulator: {fileID: 0}
+  _warmupTime: 0.5
   _detectableInteractables:
     serializedVersion: 2
     m_Bits: 384
   _attackCastOrigin: {x: 0, y: 0, z: 1.5}
   _attackRangeSize: {x: 1, y: 1, z: 0.5}
-  _debugShowAttackRangeObject: 1
+  _debugShowAttackRangeObject: 0
   _debugTestAttackRangeObject: {fileID: 3321623913711067782}
 --- !u!1001 &8697734652065939173
 PrefabInstance:
@@ -140,7 +141,7 @@ PrefabInstance:
     - target: {fileID: 6245446826695990371, guid: 83d781813af3b734f9856165b149aa54,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -33,6 +33,11 @@ public interface IAbilityBehavior
     void InterruptAbility();
 }
 
+public interface IDamageable
+{
+    void OnDamaged(int damage);
+}
+
 public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
 {
     //Declarations
@@ -66,11 +71,11 @@ public abstract class Ability : MonoBehaviour, IDebugLoggable, IAbilityBehavior
 
 
     //Internals
-    private void UpdateAbilityAreaVisulizerPosition()
+    private void UpdateAbilityAreaVisulizerPosition() //For Abilities that require free-aiming
     {
         if (_isShowingVisualizer)
             SetTargetLocation(_manipulator.GetCurrentHoverContactPoint());
-    } //For Abilities that require additional aiming
+    } 
 
     protected virtual void EnterAbility()
     {

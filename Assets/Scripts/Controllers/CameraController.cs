@@ -20,6 +20,10 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     [SerializeField] private int _orbitSpeed;
 
     [Header("Camera Utilities, States & References")]
+    [SerializeField] private bool _isCameraShaking = false;
+    [SerializeField] private Vector3 _originalPosition;
+    [SerializeField] private float _shakeMagnitude;
+
     [SerializeField] private bool _isFreeLookActive = true;
 
     [Tooltip(
@@ -43,6 +47,9 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     [SerializeField] private bool _DEBUG_setTargetAsFocus;
     [SerializeField] private GameObject _DEBUG_focusTarget;
     [SerializeField] private bool _DEBUG_enterFreeLook;
+    [SerializeField] private bool _DEBUG_shakeCamera;
+    [SerializeField] private float _DEBUG_shakeMagnitude;
+    [SerializeField] private float _DEBUG_shakeDuration;
 
 
 
@@ -58,6 +65,9 @@ public class CameraController : MonoBehaviour, IDebugLoggable
         MoveCameraOnInput();
         ZoomCameraOnInput();
         UpdateDefaultFreeLookPosition();
+
+        if (_isCameraShaking)
+            RamdomizeCameraFocusPosition();
 
         if (_isDebugActive) 
             ListenForDebugCommands();
@@ -157,6 +167,32 @@ public class CameraController : MonoBehaviour, IDebugLoggable
         //enter freeLook if our camera focus object went missing unexpectedly
         if (!_isFreeLookActive && _currentCameraFocus == null)
             EnterFreeLook();
+    }
+
+    private void StopShakingCamera()
+    {
+        if (_isCameraShaking)
+        {
+            _isCameraShaking = false;
+            if (!_isFreeLookActive)
+                _literalFocusObject.transform.localPosition = Vector3.zero;
+
+            else
+                _literalFocusObject.transform.position = _originalPosition;
+
+            if (_isDebugActive)
+                Debug.Log("Camera Shake Complete");
+        }
+
+    }
+
+    private void RamdomizeCameraFocusPosition()
+    {
+        Vector3 originPostion = _originalPosition;
+        float xRandom = _originalPosition.x + Random.Range(-_shakeMagnitude, _shakeMagnitude);
+        float zRandom = _originalPosition.z + Random.Range(-_shakeMagnitude, _shakeMagnitude);
+
+        _literalFocusObject.transform.position = new(xRandom, _originalPosition.y, zRandom);
     }
 
 
@@ -271,6 +307,17 @@ public class CameraController : MonoBehaviour, IDebugLoggable
     }
 
 
+    public void ShakeCamera(float duration, float magnitude)
+    {
+        if (!_isCameraShaking & _literalFocusObject != null)
+        {
+            _originalPosition = _literalFocusObject.transform.position;
+            _isCameraShaking = true;
+            _shakeMagnitude = magnitude;
+            Invoke(nameof(StopShakingCamera), duration);
+        }
+    }
+
 
     //Debugging
     public int LoggableID()
@@ -301,6 +348,15 @@ public class CameraController : MonoBehaviour, IDebugLoggable
             LogDebug.Log($"Attempting to set {_DEBUG_focusTarget} as focus Target...");
             SetCameraFocus(_DEBUG_focusTarget);
             LogDebug.Log("Setting Focus Target Complete", this);
+        }
+
+        if (_DEBUG_shakeCamera)
+        {
+            _DEBUG_shakeCamera = false;
+
+            LogDebug.Log($"Attempting to shake camera for {_DEBUG_shakeDuration} duration...");
+            ShakeCamera(_DEBUG_shakeDuration, _DEBUG_shakeMagnitude);
+
         }
     }
 }
