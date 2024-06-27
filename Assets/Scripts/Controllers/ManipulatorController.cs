@@ -22,9 +22,6 @@ public interface IInteractable
 
     void OnAuxiliaryClick();
 
-    void ShowBeingPursuedVisual();
-
-    void HideBeingPursuedVisual();
 }
 
 public enum InteractableType
@@ -376,7 +373,7 @@ public class ManipulatorController : MonoBehaviour, IDebugLoggable
     public void SetActionTarget(GameObject newTarget)
     {
         if (newTarget.GetComponent<IInteractable>().Type() == InteractableType.Actor)
-            _playerActor.GetComponent<IActorBehavior>().PerformAbility(0, newTarget);
+            _playerActor.GetComponent<IActorBehavior>().AttackTarget(newTarget);
     }
 
 

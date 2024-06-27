@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,50 +12,74 @@ public interface IActorBehavior
 
     void MoveActorToDestination(Vector3 position);
 
-    void PerformAbility(int abilitySlot = 0, GameObject target = null);
+    void AttackTarget(GameObject target);
+
+    void PerformAbility(int abilitySlot);
+
+    GameObject GetCurrentWeapon();
+
+    void SetCurrentWeapon(GameObject weaponObject);
 
     void ClearCurrentCommand();
 
-    void AddPursuer(GameObject pursuer);
+    void ChangeAnimState(AnimState newState);
 
-    void RemovePursuer(GameObject pursuer);
+}
 
-    void OnDamaged(int damage);
 
+
+public enum AnimState
+{
+    Idling,
+    InCombat,
+    OnDamaged,
+    WarmingAttack,
+    Attacking,
+    ResetingAttack,
+    Stunned
 }
 
 public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior, IDamageable
 {
     //Declarations
-    [Header("States")]
-    [SerializeField] private bool _isInDamagedState = false;
+    [Header("Basic Combat Utilities")]
+    [SerializeField] private float _attackCooldown = .5f;
+    [SerializeField] private bool _isAttackReady = true;
+    [SerializeField] private bool _isPerformingAction = false;
+    //[SerializeField] private bool _isStunned = false;
     [SerializeField] private bool _isInCombat = false;
     [SerializeField] private GameObject _currentTarget;
-    [SerializeField] private List<GameObject> _activePursuers = new List<GameObject>();
+    [SerializeField] private GameObject _currentWeapon;
+    [SerializeField] private LayerMask _detectableInteractables;
+    [SerializeField] private Vector3 _attackCastOrigin;
+    [SerializeField] private Vector3 _attackRangeSize;
+    private Vector3 _calculatedOrigin;
+    [SerializeField] private bool _debugShowAttackRangeObject = false;
+    [SerializeField] private GameObject _debugTestAttackRangeObject;
 
-    [Header("Abilities Settings")]
+    [Header("Abilities Utilities")]
     [SerializeField] private List<GameObject> _abilityList = new List<GameObject>();
 
-    [Header("Animation Settings")]
+    [Header("Animation Utilities")]
+    [SerializeField] private AnimState _currentAnimState = AnimState.Idling;
+    [SerializeField] private string _combateStateParamName = "isInCombat";
+    [SerializeField] private string _onDamagedParamName;
+    [SerializeField] private string _attackingStateParamName;
     [SerializeField] private Animator _actorAnimator;
-    [SerializeField] private string _inCombatParam = "isInCombat";
 
     [Header("OnDamaged Settings")]
-    [SerializeField] [Min(.05f)] private float _damagedDuration = .1f;
-    [SerializeField] private float _screenShakeTime = .1f;
-    [SerializeField] private bool _toggleScreenShake = true;
-    //[SerializeField] private ScreenShaker _screenShaker;
-    [SerializeField] private Color _onDamagedColor;
+    [SerializeField] private float _shakeDuration = .1f;
+    [SerializeField] private float _shakeMagnitude = .1f;
+    [SerializeField] private bool _toggleScreenShakeOnHit = true;
+    [SerializeField] private CameraController _cameraController;
 
-    [Header("Settings")]
+    [Header("Manipulation Settings")]
     private Color _originalColor;
     [SerializeField] private bool _isSelected = false;
     [SerializeField] private Color _onHoverColor;
     [SerializeField] private Color _onSelectedColor;
-    [SerializeField] private GameObject _targetedVisualObj;
     private NavMeshAgent _navAgent;
     [SerializeField] private Renderer _modelRenderer;
-    [SerializeField] private GameObject _basicAttack;
 
 
 
@@ -68,6 +93,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private void Update()
     {
+        UpdateTargetingUtils();
         PursueTarget();
     }
 
@@ -107,8 +133,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private void PursueTarget()
     {
-        //if we're in combat and not currently performing an ability
-        if (_isInCombat && !_basicAttack.GetComponent<IAbilityBehavior>().IsAbilityInProgress())
+        //if we're in combat and not currently performing an action
+        if (_isInCombat && !_isPerformingAction)
         {
             //Leave combat if the target vanished
             if (_currentTarget == null)
@@ -116,17 +142,13 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
             else
             {
-                //add this object as a pursuer of the target. (duplicate pusuers are ignored)
-                _currentTarget.GetComponent<IActorBehavior>().AddPursuer(gameObject);
-
-
                 if (IsTargetInRange())
                 {
                     //stop moving
                     _navAgent.ResetPath();
 
-                    //perform the action
-                    _basicAttack.GetComponent<IAbilityBehavior>().TriggerAbility();
+                    //perform the attack
+                    //...
                 }
                     
 
@@ -140,16 +162,54 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private bool IsTargetInRange()
     {
-        return _basicAttack.GetComponent<IAbilityBehavior>().IsObjectInRange(_currentTarget);
+        Vector3 halfExtendsAttackSize = new(_attackRangeSize.x / 2, _attackRangeSize.y / 2, _attackRangeSize.z / 2);
+        Collider[] hits = Physics.OverlapBox(_calculatedOrigin, halfExtendsAttackSize, transform.rotation, _detectableInteractables);
+
+        foreach (Collider hit in hits)
+        {
+            if (hit.gameObject == _currentTarget)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateTargetingUtils()
+    {
+        //update the displaced attack origin (for the boxcast)
+        _calculatedOrigin = transform.position + transform.TransformDirection(_attackCastOrigin);
+
+        //update the debug visual's position & rotation (this is done to verify the boxcast's true position)
+        _debugTestAttackRangeObject.transform.localScale = _attackRangeSize;
+        _debugTestAttackRangeObject.transform.SetPositionAndRotation(_calculatedOrigin, transform.rotation);
+
+        //show the debug object if it's toggled.
+        if (_debugShowAttackRangeObject)
+        {
+            if (!_debugTestAttackRangeObject.activeSelf)
+                _debugTestAttackRangeObject.SetActive(true);
+        }
+
+        //otherwise, hide it if it's still on
+        else
+        {
+            if (_debugTestAttackRangeObject.activeSelf)
+                _debugTestAttackRangeObject.SetActive(false);
+        }
     }
 
     private void ResetDamagedVisual()
     {
-        _isInDamagedState = false;
+        //_isInDamagedState = false;
         SetColor(_originalColor);
     }
 
+    private void PerformAttack()
+    {
+
+    }
     
+
 
     //Externals
     public GameObject GetGameObject()
@@ -198,34 +258,15 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _navAgent.SetDestination(destination);
     }
 
-    public void PerformAbility(int abilitySlot = 0, GameObject target = null)
+    public void PerformAbility(int abilitySlot)
     {
-        // 0 is the default core ability (currently basic attack)
-        if (abilitySlot == 0 && target != null)
-        {
-            _isInCombat = true;
-            _currentTarget = target;
-            _actorAnimator.SetBool( _inCombatParam, true);
-        }
+        throw new NotImplementedException();
     }
 
     public void ClearCurrentCommand()
     {
-        if (_isInCombat)
-        {
-            _isInCombat = false;
-            _actorAnimator.SetBool(_inCombatParam, false);
-
-            //interrupt current ability
-            if (_basicAttack.GetComponent<IAbilityBehavior>().IsAbilityInProgress())
-                _basicAttack.GetComponent<IAbilityBehavior>().InterruptAbility();
-
-            //Deselect and clear the target
-            if (_currentTarget != null)
-                _currentTarget.GetComponent<IActorBehavior>().RemovePursuer(gameObject);
-
-            _currentTarget = null;
-        }
+        //Clear current target
+        _currentTarget = null;
 
         //stop current pathing
         _navAgent.ResetPath();
@@ -233,47 +274,83 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     }
 
-    public void ShowBeingPursuedVisual()
-    {
-        if (!_targetedVisualObj.activeSelf && _activePursuers.Count > 0)
-            _targetedVisualObj.SetActive(true);
-    }
-
-    public void HideBeingPursuedVisual()
-    {
-        if (_targetedVisualObj.activeSelf && _activePursuers.Count < 1)
-            _targetedVisualObj.SetActive(false);
-    }
-
-    public void AddPursuer(GameObject pursuer)
-    {
-        if (!_activePursuers.Contains(pursuer) && pursuer!= null)
-        {
-            _activePursuers.Add(pursuer);
-            ShowBeingPursuedVisual();
-        }
-    }
-
-    public void RemovePursuer(GameObject puruser)
-    {
-        if (_activePursuers.Contains(puruser) && puruser != null)
-        {
-            _activePursuers.Remove(puruser);
-            HideBeingPursuedVisual();
-        }
-    }
-
     public void OnDamaged(int damage)
     {
+        ChangeAnimState(AnimState.OnDamaged);
+
+        if (_toggleScreenShakeOnHit)
+            _cameraController.ShakeCamera(_shakeDuration, _shakeMagnitude);
+        /*
         if (_isInDamagedState)
             CancelInvoke(nameof(ResetDamagedVisual));
 
         _isInDamagedState = true;
         SetColor(_onDamagedColor);
         Invoke(nameof(ResetDamagedVisual), _damagedDuration);
+        */
     }
 
-    
+    public void AttackTarget(GameObject target)
+    {
+        //enter combat if not already in combat
+        if (!_isInCombat)
+        {
+            _isInCombat = true;
+            ChangeAnimState(AnimState.InCombat);
+        }
+
+        //set new target
+        _currentTarget = target;
+    }
+
+    public GameObject GetCurrentWeapon()
+    {
+        return _currentWeapon;
+    }
+
+    public void SetCurrentWeapon(GameObject weaponObject)
+    {
+        if (weaponObject != null)
+            _currentWeapon = weaponObject;
+    }
+
+    public void ChangeAnimState(AnimState newState)
+    {
+        switch (newState) 
+        {
+            case AnimState.Idling:
+                _actorAnimator.SetBool(_combateStateParamName, false);
+                break;
+
+            case AnimState.InCombat:
+                _actorAnimator.SetBool(_combateStateParamName, true);
+                break;
+
+            case AnimState.OnDamaged:
+                _actorAnimator.SetTrigger(_onDamagedParamName);
+                break;
+
+            case AnimState.Stunned:
+                break;
+
+            case AnimState.WarmingAttack:
+                break;
+
+            case AnimState.Attacking:
+                _actorAnimator.SetBool(_attackingStateParamName, true);
+                break;
+
+            case AnimState.ResetingAttack:
+                break;
+
+            default:
+                LogDebug.Log($"Attempted to change Anim State to nonexistent state: {newState}");
+                break;
+        }
+
+
+    }
+
 
 
 
@@ -287,4 +364,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     {
         return name;
     }
+
+
 }

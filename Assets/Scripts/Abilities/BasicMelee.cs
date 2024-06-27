@@ -107,16 +107,13 @@ public class BasicMelee : Ability
         }
     }
 
-    private Collider[] CastAttackDetection()
-    {
-        Vector3 halfExtendsAttackSize = new(_attackRangeSize.x / 2, _attackRangeSize.y / 2, _attackRangeSize.z / 2);
-        return  Physics.OverlapBox(_calculatedOrigin, halfExtendsAttackSize, transform.rotation, _detectableInteractables);
-    }
 
     //Externals
     public override bool IsObjectInRange(GameObject targetObject)
     {
-        Collider[] hits = CastAttackDetection();
+        Vector3 halfExtendsAttackSize = new(_attackRangeSize.x / 2, _attackRangeSize.y / 2, _attackRangeSize.z / 2);
+        Collider[] hits = Physics.OverlapBox(_calculatedOrigin, halfExtendsAttackSize, transform.rotation, _detectableInteractables);
+
         foreach (Collider hit in hits)
         {
             if (hit.gameObject == targetObject)
