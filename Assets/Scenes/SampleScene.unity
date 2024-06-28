@@ -533,6 +533,21 @@ PrefabInstance:
       propertyPath: _cameraController
       value: 
       objectReference: {fileID: 847006925}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _idleToCombatTime
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _revertToIdleTime
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _onAttackStateParamName
+      value: onAttackTriggered
+      objectReference: {fileID: 0}
     - target: {fileID: 1674130062083518343, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
       propertyPath: _safeColliders.Array.size
@@ -541,6 +556,16 @@ PrefabInstance:
     - target: {fileID: 1674130062083518343, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
       propertyPath: _safeColliders.Array.data[1]
+      value: 
+      objectReference: {fileID: 347394098186098439}
+    - target: {fileID: 4699177402602640391, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _safeColliders.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4699177402602640391, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _safeColliders.Array.data[0]
       value: 
       objectReference: {fileID: 347394098186098439}
     - target: {fileID: 4810094518236459582, guid: b70ea8907f6e8aa4b9cd1358b703efa6,

@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1384590087969350591}
   - component: {fileID: 3759526811481390696}
-  - component: {fileID: 1680127249220648283}
   m_Layer: 0
   m_Name: Collider
   m_TagString: Untagged
@@ -56,21 +55,6 @@ CapsuleCollider:
   m_Height: 4.5
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1680127249220648283
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1560562000682249796}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdf2eb6ecb7d3bf45a22790666186294, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _safeColliders:
-  - {fileID: 3759526811481390696}
-  _damage: 1
 --- !u!1 &3740753697682107874
 GameObject:
   m_ObjectHideFlags: 0
@@ -187,6 +171,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6248375939465907078}
+  - component: {fileID: 4709747390954211035}
   m_Layer: 0
   m_Name: staff
   m_TagString: Untagged
@@ -212,6 +197,25 @@ Transform:
   - {fileID: 1384590087969350591}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4709747390954211035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3961024008863076010}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdf2eb6ecb7d3bf45a22790666186294, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _name: Staff
+  _description: A long and ridig bit of material
+  _weaponType: 0
+  _damage: 1
+  _safeColliders: []
+  _weaponCollider: {fileID: 3759526811481390696}
+  _animator: {fileID: 0}
 --- !u!1 &5930907258656311262
 GameObject:
   m_ObjectHideFlags: 0
