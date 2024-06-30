@@ -17,9 +17,9 @@ public interface IActorBehavior
 
     void PerformAbility(int abilitySlot);
 
-    IWeaponBehavior GetCurrentWeapon();
+    GameObject GetCurrentWeapon();
 
-    void SetCurrentWeapon(IWeaponBehavior weaponObject);
+    void SetCurrentWeapon(GameObject weaponObject);
 
     void ClearCurrentCommand();
 
@@ -59,7 +59,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     //[SerializeField] private bool _isStunned = false;
     [SerializeField] private bool _isInCombat = false;
     [SerializeField] private GameObject _currentTarget;
-    [SerializeField] private IWeaponBehavior _currentWeapon;
+    [SerializeField] private GameObject _currentWeapon;
     [SerializeField] private LayerMask _detectableInteractables;
     [SerializeField] private Vector3 _attackCastOrigin;
     [SerializeField] private Vector3 _attackRangeSize;
@@ -277,7 +277,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             _currentAttackSequenceTracker = null;
 
             //Disable the actor's weapon's collider in case we're mid attack
-            _currentWeapon.ToggleDamageCollider(false);
+            _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(false);
 
 
             //reset the attack command and update the attack state 
@@ -313,7 +313,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _actorAnimator.SetFloat("AttackPhase", .5f);
 
         //turn on the actor's damaging weapon collider
-        _currentWeapon.ToggleDamageCollider(true);
+        _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(true);
 
         //wait for this attack animation to complete
         yield return new WaitForSeconds(_castAttackAnimLength);
@@ -326,7 +326,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _actorAnimator.SetFloat("AttackPhase", 1);
 
         //turn off the actor's damaging weapon collider
-        _currentWeapon.ToggleDamageCollider(false);
+        _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(false);
 
         //wait for this last animation to complete
         yield return new WaitForSeconds(_recoverAttackAnimLength);
@@ -350,9 +350,10 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private void ReadAnimationClipLengths()
     {
-        AnimationClip[] allClips = _actorAnimator.GetComponent<RuntimeAnimatorController>().animationClips;
+        AnimationClip[] allClips = _actorAnimator.runtimeAnimatorController.animationClips;
+        LogDebug.Log($"Found anim clips: {allClips.Length}", this);
 
-        switch (_currentWeapon.Type)
+        switch (_currentWeapon.GetComponent<IWeaponBehavior>().Type)
         {
             case WeaponType.Spear:
                 _enterAttackAnimLength = GetClipLength(_enterAttackClipName, allClips);
@@ -540,6 +541,13 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     public void AttackTarget(GameObject target)
     {
+        //clear the standby timer if it's active
+        if (_revertToIdleCounter != null)
+        {
+            StopCoroutine(_revertToIdleCounter);
+            _revertToIdleCounter = null;
+        }
+
         //enter combat if not already in combat
         if (!_isInCombat)
         {
@@ -551,14 +559,14 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _currentTarget = target;
     }
 
-    public IWeaponBehavior GetCurrentWeapon()
+    public GameObject GetCurrentWeapon()
     {
         return _currentWeapon;
     }
 
-    public void SetCurrentWeapon(IWeaponBehavior newBehavior)
+    public void SetCurrentWeapon(GameObject newBehavior)
     {
-        if (newBehavior != null)
+        if (newBehavior != null && newBehavior.GetComponent<IWeaponBehavior>() != null)
             _currentWeapon = newBehavior;
     }
 

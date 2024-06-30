@@ -530,6 +530,11 @@ PrefabInstance:
       objectReference: {fileID: 5695925979697861924}
     - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
+      propertyPath: _currentWeapon
+      value: 
+      objectReference: {fileID: 897426429}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
       propertyPath: _cameraController
       value: 
       objectReference: {fileID: 847006925}
@@ -545,8 +550,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
+      propertyPath: _attackCastOrigin.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
       propertyPath: _onAttackStateParamName
       value: onAttackTriggered
+      objectReference: {fileID: 0}
+    - target: {fileID: 1567969964854951064, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1674130062083518343, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
@@ -558,6 +573,11 @@ PrefabInstance:
       propertyPath: _safeColliders.Array.data[1]
       value: 
       objectReference: {fileID: 347394098186098439}
+    - target: {fileID: 3766754249555176628, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4699177402602640391, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
       propertyPath: _safeColliders.Array.size
@@ -1396,6 +1416,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b895f5e5fde96af419858d12602549ba, type: 3}
+--- !u!1 &897426429 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3932439511943453814, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+    type: 3}
+  m_PrefabInstance: {fileID: 481776666}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1001093698
 GameObject:
   m_ObjectHideFlags: 0
