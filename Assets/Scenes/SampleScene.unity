@@ -520,6 +520,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
+      propertyPath: _attackParam
+      value: isAttacking
+      objectReference: {fileID: 0}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
       propertyPath: _basicAttack
       value: 
       objectReference: {fileID: 0}
@@ -533,6 +538,11 @@ PrefabInstance:
       propertyPath: _currentWeapon
       value: 
       objectReference: {fileID: 897426429}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _isDebugActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}
       propertyPath: _cameraController
@@ -557,6 +567,11 @@ PrefabInstance:
         type: 3}
       propertyPath: _onAttackStateParamName
       value: onAttackTriggered
+      objectReference: {fileID: 0}
+    - target: {fileID: 1425987625628472132, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
+        type: 3}
+      propertyPath: _atkSequenceTransitionTime
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1567969964854951064, guid: b70ea8907f6e8aa4b9cd1358b703efa6,
         type: 3}

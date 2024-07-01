@@ -331,9 +331,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         //Enter the casting Attack State
         ChangeAnimState(AnimState.CastingAttack);
 
-        //This state needs to lerp through a blend before it's ready. Wait for it
-        yield return new WaitForSeconds(_AtkCastTransitionTime);
-
         //Turn on the actor's damaging weapon collider
         _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(true);
 
@@ -347,10 +344,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
         //Enter the recovery state
         ChangeAnimState(AnimState.RecoveringAttack);
-
-        //This state also needs to lerp through a blend before it's ready. Wait for it
-        yield return new WaitForSeconds(_AtkRecoveryTransitionTime);
-
 
         //Now wait for this last animation to complete
         yield return new WaitForSeconds(_recoverAttackAnimLength);
@@ -446,56 +439,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
                 //otherwise, lerp completed. Reset the lerp direction
                 else
                     _idleStanceLerpDirection = IdleAnimLerpDirection.Unset;
-            }
-        }
-
-
-        
-        //Smooth out each attack transitionover each frame if out transition switch is triggered
-        if (_atkAnimLerpDirection != AtkAnimLerpDirection.Unset)
-        {
-            // The AttackPhase parameter goes from 0f to 1f
-            // 0: means we're performing the warmup Atk Anim (we default to this when entering an attack)
-            // 0.5: means we're casting the attack
-            // 1: means we're recovering from the attack
-            // any float in between is a blend btwn states 
-
-            if (_atkAnimLerpDirection == AtkAnimLerpDirection.EnterCast)
-            {
-                //Keep lerping if we aren't yet at the "cast" threshold
-                if (_actorAnimator.GetFloat("AttackPhase") != .5f)
-                {
-                    //Perform this frame's lerp
-                    _actorAnimator.SetFloat("AttackPhase", .5f, _AtkCastTransitionTime, Time.deltaTime);
-
-                    //snap to the threshold if we're really close
-                    if (Mathf.Abs(_actorAnimator.GetFloat("AttackPhase") - .5f) <= .05f)
-                        _actorAnimator.SetFloat("AttackPhase", .5f);
-                }
-                    
-                
-                //reset the switch
-                else
-                    _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
-            }
-
-            else if (_atkAnimLerpDirection == AtkAnimLerpDirection.EnterRecovery)
-            {
-                //Keep lerping if we aren't yet at the "recovery" threshold
-                if (_actorAnimator.GetFloat("AttackPhase") != 1f)
-                {
-                    //Perform this frame's lerp
-                    _actorAnimator.SetFloat("AttackPhase", 1f, _AtkCastTransitionTime, Time.deltaTime);
-
-                    //snap to the threshold if we're really close
-                    if (Mathf.Abs(_actorAnimator.GetFloat("AttackPhase") - 1f) <= .05f)
-                        _actorAnimator.SetFloat("AttackPhase", 1f);
-                }
-                    
-
-                //reset the switch
-                else
-                    _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
             }
         }
     }
@@ -679,23 +622,16 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             case AnimState.WarmingAttack:
                 _currentAnimState = AnimState.WarmingAttack;
                 _actorAnimator.SetBool(_attackParam, true);
-                _actorAnimator.SetFloat("AttackPhase", 0);
                 break;
 
 
             case AnimState.CastingAttack: 
                 _currentAnimState = AnimState.CastingAttack;
-
-                //Set the switch that'll enable the transition over time
-                _atkAnimLerpDirection = AtkAnimLerpDirection.EnterCast;
                 break;
 
 
             case AnimState.RecoveringAttack:
                 _currentAnimState = AnimState.RecoveringAttack;
-
-                //Set the switch that'll enable the transition over time
-                _atkAnimLerpDirection = AtkAnimLerpDirection.EnterRecovery;
                 break;
 
             case AnimState.EndingAttackSequence:
@@ -709,9 +645,6 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
             case AnimState.CancelingAttack:
                 _currentAnimState= AnimState.CancelingAttack;
-                
-                //reset the lerp utility
-                _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
                 
                 //auto end the sequence
                 ChangeAnimState(AnimState.EndingAttackSequence);
