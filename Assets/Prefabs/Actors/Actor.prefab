@@ -115,24 +115,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b14892e80e0c9dd438a68536cc066629, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _revertToIdleTime: 1
   _attackCooldown: 0.5
   _isAttackReady: 1
   _isAttacking: 0
   _isInCombat: 0
   _currentTarget: {fileID: 0}
+  _currentWeapon: {fileID: 0}
   _detectableInteractables:
     serializedVersion: 2
     m_Bits: 384
-  _attackCastOrigin: {x: 0, y: 0, z: 0.5}
-  _attackRangeSize: {x: 0.5, y: 0.5, z: 0.1}
+  _attackCastOrigin: {x: 0, y: 0, z: 1}
+  _attackRangeSize: {x: 0.1, y: 0.25, z: 3}
   _debugShowAttackRangeObject: 1
   _debugTestAttackRangeObject: {fileID: 4444114976295788989}
   _abilityList: []
   _currentAnimState: 0
   _onDamagedParam: onDamaged
-  _attackParam: onAttackTriggered
+  _attackParam: isAttacking
   _cancelAttackParam: onAttackCanceled
   _idleToCombatTime: 0.2
+  _AtkCastTransitionTime: 0.1
+  _AtkRecoveryTransitionTime: 0.1
   _actorAnimator: {fileID: 3422844052160896852}
   _enterAttackClipName: actor_spear_enterAttack_anim
   _castAttackClipName: actor_spear_castAttack_anim
@@ -148,6 +152,8 @@ MonoBehaviour:
   _onHoverColor: {r: 1, g: 1, b: 1, a: 0}
   _onSelectedColor: {r: 1, g: 0.65787435, b: 0, a: 1}
   _modelRenderer: {fileID: 8862159751345096946}
+  _isDebugActive: 0
+  _DEBUG_interruptAtk: 0
 --- !u!195 &2068081731678576503
 NavMeshAgent:
   m_ObjectHideFlags: 0

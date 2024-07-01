@@ -35,65 +35,88 @@ public enum AnimState
     InCombat,
     OnDamaged,
     WarmingAttack,
-    Attacking,
+    CastingAttack,
     RecoveringAttack,
     CancelingAttack,
+    EndingAttackSequence,
     Stunned
 }
 
-public enum AnimLerpDirection
+public enum IdleAnimLerpDirection
 {
     Unset,
     IntoCombat,
     OutOfCombat
 }
 
+public enum AtkAnimLerpDirection
+{
+    Unset,
+    EnterCast,
+    EnterRecovery
+}
+
 public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IActorBehavior, IDamageable
 {
     //Declarations
     [Header("Basic Combat Utilities")]
-    [SerializeField] private float _revertToIdleTime = 1;
-    [SerializeField] private float _attackCooldown = .5f;
+    [SerializeField] private bool _isPursuingTarget = false;
+    [SerializeField] private GameObject _currentTarget;
+    [SerializeField] private bool _isInCombat = false;
     [SerializeField] private bool _isAttackReady = true;
     [SerializeField] private bool _isAttacking = false;
-    //[SerializeField] private bool _isStunned = false;
-    [SerializeField] private bool _isInCombat = false;
-    [SerializeField] private GameObject _currentTarget;
+    [Space(12)]
+    [SerializeField] private float _revertToIdleTime = 1;
+    [SerializeField] private float _attackCooldown = .5f;
+    [Space(12)]
     [SerializeField] private GameObject _currentWeapon;
-    [SerializeField] private LayerMask _detectableInteractables;
     [SerializeField] private Vector3 _attackCastOrigin;
     [SerializeField] private Vector3 _attackRangeSize;
+    [SerializeField] private LayerMask _detectableInteractables;
+    
     private Vector3 _calculatedOrigin;
     [SerializeField] private bool _debugShowAttackRangeObject = false;
     [SerializeField] private GameObject _debugTestAttackRangeObject;
     private IEnumerator _currentAttackSequenceTracker;
     private IEnumerator _revertToIdleCounter;
-    private bool _interruptAttackCmd = false;
+
+
+
 
     [Header("Abilities Utilities")]
     [SerializeField] private List<GameObject> _abilityList = new List<GameObject>();
 
+
+
     [Header("Animation Utilities")]
-    private AnimLerpDirection _idleStanceLerpDirection = AnimLerpDirection.Unset;
     [SerializeField] private AnimState _currentAnimState = AnimState.Idling;
+    [SerializeField] private float _idleToCombatTransitionTime = .2f;
+    [SerializeField] private float _AtkCastTransitionTime = .1f;
+    [SerializeField] private float _AtkRecoveryTransitionTime = .1f;
+    private IdleAnimLerpDirection _idleStanceLerpDirection = IdleAnimLerpDirection.Unset;
+    private AtkAnimLerpDirection _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
+
     [SerializeField] private string _onDamagedParam = "onDamaged";
-    [SerializeField] private string _attackParam= "onAttackTriggered";
-    [SerializeField] private string _cancelAttackParam = "onAttackCanceled";
-    [SerializeField] private float _idleToCombatTime = .2f;
-    [SerializeField] private Animator _actorAnimator;
+    [SerializeField] private string _attackParam = "isAttacking";
     [SerializeField] private string _enterAttackClipName;
     [SerializeField] private string _castAttackClipName;
     [SerializeField] private string _recoverAttackClipName;
-    [SerializeField] private float _enterAttackAnimLength;
-    [SerializeField] private float _castAttackAnimLength;
-    [SerializeField] private float _recoverAttackAnimLength;
-    //[SerializeField] private string _enterAttackName
+    [SerializeField] private Animator _actorAnimator;
+    private float _enterAttackAnimLength;
+    private float _castAttackAnimLength;
+    private float _recoverAttackAnimLength;
+
+
+
 
     [Header("OnDamaged Settings")]
     [SerializeField] private float _shakeDuration = .1f;
     [SerializeField] private float _shakeMagnitude = .1f;
     [SerializeField] private bool _toggleScreenShakeOnHit = true;
     [SerializeField] private CameraController _cameraController;
+
+
+
 
     [Header("Manipulation Settings")]
     private Color _originalColor;
@@ -102,6 +125,13 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     [SerializeField] private Color _onSelectedColor;
     private NavMeshAgent _navAgent;
     [SerializeField] private Renderer _modelRenderer;
+
+
+
+
+    [Header("Debugging")]
+    [SerializeField] private bool _isDebugActive = false;
+    [SerializeField] private bool _DEBUG_interruptAtk = false;
 
 
 
@@ -115,9 +145,9 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private void Update()
     {
+        ListenForDebugCommands();
         UpdateTargetingUtils();
         LerpTransitionAnimations();
-        InterruptAttackOnCommand();
         PursueTarget();
         
     }
@@ -159,7 +189,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     private void PursueTarget()
     {
         //if we're in combat with a target and not currently performing an action
-        if (_isInCombat && !_isAttacking && _currentTarget != null)
+        if (_isInCombat && !_isAttacking && _currentTarget != null && _isPursuingTarget)
         {
             //are we in range?
             if (IsTargetInRange())
@@ -180,8 +210,10 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         }
 
         //are we in a combat state without a target?
-        else if (_isInCombat && _currentTarget == null)
+        else if (_isInCombat && _currentTarget == null && _isPursuingTarget)
         {
+            _isPursuingTarget = false;
+
             //if we aren't yet reverting to a passive idle state
             if (_revertToIdleCounter == null)
             {
@@ -253,11 +285,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             //Make sure our animationClip times match the current weapon's type (spear anims for the spear weapon)
             ReadAnimationClipLengths();
 
-            //Begin the attack animation chain
-            _actorAnimator.SetFloat("AttackPhase", 0);
-            ChangeAnimState(AnimState.Attacking);
-
-            //Begin the animation tracker
+            //Begin the animation sequence tracker
             StartCoroutine(_currentAttackSequenceTracker);
 
         }
@@ -268,10 +296,12 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         _isAttackReady = true;
     }
 
-    private void InterruptAttackOnCommand()
+    private void InterruptAttack()
     {
-        if (_interruptAttackCmd && _isAttacking)
+        if (_isAttacking)
         {
+            _isAttacking = false;
+
             //IMMEDIATELY Stop the current attack sequence manager
             StopCoroutine(_currentAttackSequenceTracker);
             _currentAttackSequenceTracker = null;
@@ -279,17 +309,8 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
             //Disable the actor's weapon's collider in case we're mid attack
             _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(false);
 
-
-            //reset the attack command and update the attack state 
-            _interruptAttackCmd = false;
-            _isAttacking = false;
-
-            //trigger the cancelAttack animation
+            //cancel the attack animation sequence
             ChangeAnimState(AnimState.CancelingAttack);
-            _currentAnimState = AnimState.InCombat;
-
-            //reset the attack phase
-            _actorAnimator.SetFloat("AttackPhase", 0);
 
             //begin cooling down the Attack ability
             Invoke(nameof(ReadyAttack), _attackCooldown);
@@ -299,50 +320,50 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
     private IEnumerator TimeAttackLogicToAnimationLengths()
     {
-        //update the current actor's state (for debugging)
-        _currentAnimState = AnimState.WarmingAttack;
+        //Enter the warming state
+        ChangeAnimState(AnimState.WarmingAttack);
 
         //wait for the actor to finish entering its attack
         yield return new WaitForSeconds(_enterAttackAnimLength);
 
 
 
+        //Enter the casting Attack State
+        ChangeAnimState(AnimState.CastingAttack);
 
-        //update into the next state
-        _currentAnimState = AnimState.Attacking;
-        _actorAnimator.SetFloat("AttackPhase", .5f);
+        //This state needs to lerp through a blend before it's ready. Wait for it
+        yield return new WaitForSeconds(_AtkCastTransitionTime);
 
-        //turn on the actor's damaging weapon collider
+        //Turn on the actor's damaging weapon collider
         _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(true);
 
-        //wait for this attack animation to complete
+        //Now wait for the attack animation to complete
         yield return new WaitForSeconds(_castAttackAnimLength);
 
 
 
-
-        //update into the final attack-sequence state
-        _currentAnimState = AnimState.RecoveringAttack;
-        _actorAnimator.SetFloat("AttackPhase", 1);
-
-        //turn off the actor's damaging weapon collider
+        //Turn off the actor's damaging weapon collider
         _currentWeapon.GetComponent<IWeaponBehavior>().ToggleDamageCollider(false);
 
-        //wait for this last animation to complete
+        //Enter the recovery state
+        ChangeAnimState(AnimState.RecoveringAttack);
+
+        //This state also needs to lerp through a blend before it's ready. Wait for it
+        yield return new WaitForSeconds(_AtkRecoveryTransitionTime);
+
+
+        //Now wait for this last animation to complete
         yield return new WaitForSeconds(_recoverAttackAnimLength);
 
 
-
-
-        //now we've exited the attack!
-        _currentAnimState = AnimState.InCombat;
-        _actorAnimator.SetFloat("AttackPhase", 0);
-
-        // clear this utility for another time
-        _currentAttackSequenceTracker = null;
-
-        //exit attack state
+        //Leave the attack state
         _isAttacking = false;
+
+        //now just exit the attack animation sequence
+        ChangeAnimState(AnimState.EndingAttackSequence);
+
+        //clear this utility for another time
+        _currentAttackSequenceTracker = null;
 
         //begin cooling down the attack ability
         Invoke(nameof(ReadyAttack), _attackCooldown);
@@ -379,7 +400,7 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
     private void LerpTransitionAnimations()
     {
         //Smooth out the idle transition each frame if our smoothing switch is triggered
-        if (_idleStanceLerpDirection != AnimLerpDirection.Unset)
+        if (_idleStanceLerpDirection != IdleAnimLerpDirection.Unset)
         {
             // The CombatStance parameter goes from 0f to 1f
             // 0: means out of combat
@@ -388,46 +409,97 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
 
             // is our lerp switch set to enter combat?
-            if (_idleStanceLerpDirection == AnimLerpDirection.IntoCombat)
+            if (_idleStanceLerpDirection == IdleAnimLerpDirection.IntoCombat)
             {
                 //Lerp the current idle parameter into combat if the parameter isn't 1 
                 if (_actorAnimator.GetFloat("CombatStance") < 1)
                 {
-                    _actorAnimator.SetFloat("CombatStance", 1, _idleToCombatTime, Time.deltaTime);
+                    _actorAnimator.SetFloat("CombatStance", 1, _idleToCombatTransitionTime, Time.deltaTime);
 
                     //fix the .999999 != 1 lerping issue
                     //Just snap to complete when "close enough"
                     if (_actorAnimator.GetFloat("CombatStance") > .95)
                         _actorAnimator.SetFloat("CombatStance", 1);
                 }
-                    
+
 
                 //otherwise, lerp completed. Reset the lerp direction
                 else
-                    _idleStanceLerpDirection = AnimLerpDirection.Unset;
+                    _idleStanceLerpDirection = IdleAnimLerpDirection.Unset;
             }
 
             // is our lerp switch set to leave combat?
-            else if (_idleStanceLerpDirection == AnimLerpDirection.OutOfCombat)
+            else if (_idleStanceLerpDirection == IdleAnimLerpDirection.OutOfCombat)
             {
                 //Lerp the current idle parameter OUT of combat if the parameter isn't 0
                 if (_actorAnimator.GetFloat("CombatStance") > 0)
                 {
-                    _actorAnimator.SetFloat("CombatStance", 0, _idleToCombatTime, Time.deltaTime);
+                    _actorAnimator.SetFloat("CombatStance", 0, _idleToCombatTransitionTime, Time.deltaTime);
 
                     //fix the .00001 != 0 lerping issue
                     //Just snap to complete when "close enough"
                     if (_actorAnimator.GetFloat("CombatStance") < .05)
                         _actorAnimator.SetFloat("CombatStance", 0);
                 }
-                    
+
 
                 //otherwise, lerp completed. Reset the lerp direction
                 else
-                    _idleStanceLerpDirection = AnimLerpDirection.Unset;
+                    _idleStanceLerpDirection = IdleAnimLerpDirection.Unset;
+            }
+        }
+
+
+        
+        //Smooth out each attack transitionover each frame if out transition switch is triggered
+        if (_atkAnimLerpDirection != AtkAnimLerpDirection.Unset)
+        {
+            // The AttackPhase parameter goes from 0f to 1f
+            // 0: means we're performing the warmup Atk Anim (we default to this when entering an attack)
+            // 0.5: means we're casting the attack
+            // 1: means we're recovering from the attack
+            // any float in between is a blend btwn states 
+
+            if (_atkAnimLerpDirection == AtkAnimLerpDirection.EnterCast)
+            {
+                //Keep lerping if we aren't yet at the "cast" threshold
+                if (_actorAnimator.GetFloat("AttackPhase") != .5f)
+                {
+                    //Perform this frame's lerp
+                    _actorAnimator.SetFloat("AttackPhase", .5f, _AtkCastTransitionTime, Time.deltaTime);
+
+                    //snap to the threshold if we're really close
+                    if (Mathf.Abs(_actorAnimator.GetFloat("AttackPhase") - .5f) <= .05f)
+                        _actorAnimator.SetFloat("AttackPhase", .5f);
+                }
+                    
+                
+                //reset the switch
+                else
+                    _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
+            }
+
+            else if (_atkAnimLerpDirection == AtkAnimLerpDirection.EnterRecovery)
+            {
+                //Keep lerping if we aren't yet at the "recovery" threshold
+                if (_actorAnimator.GetFloat("AttackPhase") != 1f)
+                {
+                    //Perform this frame's lerp
+                    _actorAnimator.SetFloat("AttackPhase", 1f, _AtkCastTransitionTime, Time.deltaTime);
+
+                    //snap to the threshold if we're really close
+                    if (Mathf.Abs(_actorAnimator.GetFloat("AttackPhase") - 1f) <= .05f)
+                        _actorAnimator.SetFloat("AttackPhase", 1f);
+                }
+                    
+
+                //reset the switch
+                else
+                    _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
             }
         }
     }
+
 
     private IEnumerator CountTimeUntilRevertToIdle()
     {
@@ -557,6 +629,9 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
 
         //set new target
         _currentTarget = target;
+
+        //enter pursuit
+        _isPursuingTarget = true;
     }
 
     public GameObject GetCurrentWeapon()
@@ -575,35 +650,73 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         switch (newState) 
         {
             case AnimState.Idling:
-                _idleStanceLerpDirection = AnimLerpDirection.OutOfCombat;
+                _currentAnimState = AnimState.Idling;
+
+                //Set the switch that'll enable the transition over time
+                _idleStanceLerpDirection = IdleAnimLerpDirection.OutOfCombat;
                 break;
+
 
             case AnimState.InCombat:
-                _idleStanceLerpDirection = AnimLerpDirection.IntoCombat;
+                _currentAnimState = AnimState.InCombat;
+
+                //Set the switch that'll enable the transition over time
+                _idleStanceLerpDirection = IdleAnimLerpDirection.IntoCombat;
                 break;
 
+
             case AnimState.OnDamaged:
+                _currentAnimState = AnimState.OnDamaged;
                 _actorAnimator.SetTrigger(_onDamagedParam);
                 break;
 
+
             case AnimState.Stunned:
+                _currentAnimState = AnimState.Stunned;
                 break;
+
 
             case AnimState.WarmingAttack:
-                LogDebug.Warn($"Attempted to forcefully enter a TRANSITIONAL animation state ({newState}). Ignoring Cmd.",this);
+                _currentAnimState = AnimState.WarmingAttack;
+                _actorAnimator.SetBool(_attackParam, true);
+                _actorAnimator.SetFloat("AttackPhase", 0);
                 break;
 
-            case AnimState.Attacking:
-                _actorAnimator.SetBool(_attackParam, true);
+
+            case AnimState.CastingAttack: 
+                _currentAnimState = AnimState.CastingAttack;
+
+                //Set the switch that'll enable the transition over time
+                _atkAnimLerpDirection = AtkAnimLerpDirection.EnterCast;
                 break;
+
 
             case AnimState.RecoveringAttack:
-                LogDebug.Warn($"Attempted to forcefully enter a TRANSITIONAL animation state ({newState}). Ignoring Cmd.", this);
+                _currentAnimState = AnimState.RecoveringAttack;
+
+                //Set the switch that'll enable the transition over time
+                _atkAnimLerpDirection = AtkAnimLerpDirection.EnterRecovery;
                 break;
 
-            case AnimState.CancelingAttack:
-                _actorAnimator.SetTrigger(_cancelAttackParam);
+            case AnimState.EndingAttackSequence:
+                _currentAnimState = AnimState.EndingAttackSequence;
+                _actorAnimator.SetBool(_attackParam, false);
+
+                //auto enter the combat state
+                ChangeAnimState(AnimState.InCombat);
                 break;
+
+
+            case AnimState.CancelingAttack:
+                _currentAnimState= AnimState.CancelingAttack;
+                
+                //reset the lerp utility
+                _atkAnimLerpDirection = AtkAnimLerpDirection.Unset;
+                
+                //auto end the sequence
+                ChangeAnimState(AnimState.EndingAttackSequence);
+                break;
+
 
             default:
                 LogDebug.Warn($"Attempted to change into an unsupported animation state: {newState}",this);
@@ -627,5 +740,16 @@ public class ActorBehaviour : MonoBehaviour, IDebugLoggable, IInteractable, IAct
         return name;
     }
 
+    private void ListenForDebugCommands()
+    {
+        if (_isDebugActive)
+        {
+            if (_DEBUG_interruptAtk)
+            {
+                _DEBUG_interruptAtk = false;
+                InterruptAttack();
+            }
+        }
+    }
 
 }
